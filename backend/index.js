@@ -4,6 +4,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 
 const authRouter = require("./routers/authRouter.js");
+const mediaRouter = require("./routers/mediaProxy.router.js");
 
 const port = process.env.PORT || 8080;
 const db = process.env.DB_URL || "mongodb://localhost:27017/";
@@ -11,7 +12,8 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use("/api/auth", authRouter);
+app.use("/auth", authRouter);
+app.use("/media", mediaRouter);
 
 
 const start = async () => {

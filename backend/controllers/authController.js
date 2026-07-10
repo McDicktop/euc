@@ -2,10 +2,12 @@ const User = require("../models/user.js")
 
 const { PHONE_RE } = require("../constants.js");
 
+const { listS3Objects } = require("../utils/s3.js");
+
 class AuthController {
 
     async signIn() {
-    
+
     }
 
     async signUp(req, res) {
@@ -49,10 +51,10 @@ class AuthController {
             userData.address = {};
             userData.email = email;
             userData.name = name;
-            userData.password = password;           
+            userData.password = password;
             userData.address.country = address.country;
             userData.address.city = address.city;
-            
+
             if (address.street && typeof address.street === "string") {
                 userData.address.street = address.street;
             }
@@ -86,6 +88,21 @@ class AuthController {
             });
         }
     }
+
+    // event/files?prefix=cover/
+    async getFiles(req, res) {
+        try {
+            const files = await listS3Objects(req.query.prefix ?? "");
+            return res.status(200).json(files);
+        } catch (e) {
+            console.error(e);
+            return res.status(500).json({
+                message: "Ошибка сервера, попробуйте запрос позже.",
+                error: "SERVER_ERROR",
+            });
+        }
+    }
+
 
 
 }
