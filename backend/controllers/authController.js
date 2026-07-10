@@ -52,6 +52,7 @@ class AuthController {
             userData.password = password;           
             userData.address.country = address.country;
             userData.address.city = address.city;
+            
             if (address.street && typeof address.street === "string") {
                 userData.address.street = address.street;
             }
