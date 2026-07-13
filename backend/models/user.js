@@ -39,7 +39,8 @@ const UserSchema = new mongoose.Schema({
     password: {
         type: String,
         trim: true,
-        maxlength: [64, "PASSWORD length must not exceed 64 characters"],
+        maxlength: [128, "PASSWORD length must not exceed 128 characters"],
+        minlength: [6, "PASSWORD length must exceed 6 characters"],
         required: [true, "PASSWORD required"],
     },
     avatar: {
@@ -83,6 +84,11 @@ const UserSchema = new mongoose.Schema({
         required: [true, "ROLE required"],
         default: 'user',
     },
+        refreshTokenHash: {
+        type: String,
+        required: false,
+        default: null
+    }
 });
 
 module.exports = mongoose.model("User", UserSchema);

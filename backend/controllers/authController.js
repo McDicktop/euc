@@ -53,26 +53,63 @@ function sendError(res, status, error, message, details) {
 }
 
 function validateSingUpBody(body) {
-    // email, name, password, address, phone
-    // const { email, name, password, address } = req.body;
-    //         if (
-    //             typeof email !== "string" ||
-    //             typeof name !== "string" ||
-    //             typeof password !== "string"
-    //         ) {
-    //             return res.status(400).json({
-    //                 message:
-    //                     "EMAIL, NAME and PASSWORD are required and must be a string",
-    //                 error: "INVALID_REQUEST_BODY",
-    //             });
-    //         }
-    // все поля по порядку
+
+    const errors = {};
+
+    if (typeof body.email !== 'string' || !EMAIL_RE.test(body.email.trim().toLowerCase()) || body.email.trim().length > 64) {
+        errors.email = { message: "EMAIL required, must be a string type and must be a valid e-mail adress" };
+    }
+
+    if (typeof body.name !== 'string' || body.name.trim().length > 64) {
+        errors.email = { message: "NAME required, must be a string type and NAME length must be equal or less then 64 chars" };
+    }
+
+    if (typeof body.password !== 'string' || body.password.trim().length < 6 || body.password.trim().length > 16) {
+        errors.password = { message: "PASSWORD required, must be a string type and PASSWORD length must be from 6 to 16 chars" };
+    }
+
+    if (body.phone && !PHONE_RE.test(body.phone.trim())) {
+        errors.phone = { message: "PHONE must be a string and valid formatted (+X)" };
+    }
+
+    if (typeof body.address !== 'object' ||
+        body.address === null ||
+        Array.isArray(body.address) ||
+        typeof body.address?.country !== 'string' ||
+        typeof body.address?.city !== 'string' ||
+        typeof body.address?.street !== 'string' ||
+        !body.address.country.trim().length ||
+        !body.address.city.trim().length) {
+        errors.address = { message: "COUNTRY, CITY and STREET of ADDRESS are required, must be string types; COUNTRY and CITY must not be empty strings" }
+    }
+
+    if (Object.keys(errors).length > 0) {
+        const error = new Error("Validation failed");
+        error.name = "ValidationError";
+        error.errors = errors; // Передаем объект с деталями
+        throw error;
+    }
+
+    const data = {
+        email: body.email.trim().toLowerCase(),
+        name: body.name.trim(),
+        password: body.password.trim(),
+        ...(body.phone ? { phone: body.phone.trim() } : {}),
+        address: {
+            country: body.address.country.trim(),
+            city: body.address.city.trim(),
+            ...(body.address.street ? { street: body.address.street.trim() } : {}),
+        }
+    }
+    return data;
+
+
 }
 
 class AuthController {
-    async signIn(req, res) {
+    async signin(req, res) {
         try {
-            const { email, password } = req.body ?? {};
+            const { email, password } = req.body || {};
 
             if (typeof email !== "string" || typeof password !== "string") {
                 return sendError(
@@ -185,6 +222,7 @@ class AuthController {
             if (!isTokenValid) {
                 user.refreshTokenHash = undefined;
                 await user.save();
+
                 res.clearCookie(REFRESH_COOKIE_NAME, REFRESH_COOKIE_OPTIONS);
                 return sendError(
                     res,
@@ -223,7 +261,7 @@ class AuthController {
                     await User.findByIdAndUpdate(payload.sub, {
                         $unset: { refreshTokenHash: 1 },
                     });
-                } catch (e) {}
+                } catch (e) { }
             }
 
             res.clearCookie(REFRESH_COOKIE_NAME, REFRESH_COOKIE_OPTIONS);
@@ -235,7 +273,7 @@ class AuthController {
         }
     }
 
-    async signUp(req, res) {
+    async signup(req, res) {
         if (!req.body) {
             return res.status(400).json({
                 message: "A request without data was received",
@@ -244,10 +282,9 @@ class AuthController {
         }
 
         try {
-            // const validation = validateSingUpBody
-            // ....
+            const validation = validateSingUpBody(req.body);
 
-            const { email, name, password, phone, address } = validation.data;
+            const { email, name, password, phone, address } = validation;
 
             const isExist = await User.findOne({ email });
 
@@ -260,7 +297,7 @@ class AuthController {
                 );
             }
 
-            const hashedPassword = await bcrypt.has(password, SALT_ROUNDS);
+            const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
             const user = new User({
                 email,
@@ -283,10 +320,13 @@ class AuthController {
         } catch (e) {
             console.error(e);
 
-            if(e.name === "ValidationError") {
+            if (e.name === "ValidationError") {
                 const errors = Object.values(e.errors).map((err) => err.message);
-
                 return sendError(res, 400, "VALIDATION_ERROR", "Validation failed", errors);
+            }
+
+            if (e.code === 11000) {
+                return sendError(res, 400, "PHONE_DUPLICATE", `PHONE ${e.keyValue.phone} is alredy registered`);
             }
 
             return sendError(res, 500, "SERVER_ERROR", "Internal server error");
