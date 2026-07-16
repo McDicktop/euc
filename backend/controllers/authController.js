@@ -64,8 +64,8 @@ function validateSingUpBody(body) {
         errors.email = { message: "NAME required, must be a string type and NAME length must be equal or less then 64 chars" };
     }
 
-    if (typeof body.password !== 'string' || body.password.trim().length < 6 || body.password.trim().length > 16) {
-        errors.password = { message: "PASSWORD required, must be a string type and PASSWORD length must be from 6 to 16 chars" };
+    if (typeof body.password !== 'string' || body.password.trim().length < 6 || body.password.trim().length > 32) {
+        errors.password = { message: "PASSWORD required, must be a string type and PASSWORD length must be from 6 to 3 chars" };
     }
 
     if (body.phone && !PHONE_RE.test(body.phone.trim())) {
