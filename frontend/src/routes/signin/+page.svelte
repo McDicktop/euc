@@ -2,7 +2,7 @@
 	import IconYandex from '~icons/gravity-ui/logo-yandex';
 
 	import { goto } from '$app/navigation';
-	import { Eye, EyeOff } from '@lucide/svelte';
+	import { Eye, EyeOff, Mail, LockKeyhole } from '@lucide/svelte';
 	let email = '';
 	let password = '';
 	let errorMessage = '';
@@ -28,44 +28,50 @@
 		<form on:submit|preventDefault={submit} class=" flex flex-col justify-center items-center">
 			<!-- Inputs block -->
 			<div class="flex flex-col gap-4 w-full">
-				<input
-					id="email"
-					type="text"
-					bind:value={email}
-					class="rounded-3xl
-                    	text-gray-300 text-sm
-                        px-3 py-2 outline-none w-full
-                        border-2 border-purple-800
-                        placeholder-gray-500 duration-200"
-					placeholder="Email"
-					disabled={isLoading ? true : false}
-				/>
-
-				<div class="flex w-full relative">
+				<div class="relative">
+					<Mail class="absolute size-5 left-4 top-2.5 text-purple-300" />
 					<input
-						id="password"
-						type={isPassHidden ? 'password' : 'text'}
-						bind:value={password}
+						id="email"
+						type="text"
+						bind:value={email}
 						class="rounded-3xl
                     	text-gray-300 text-sm
-                        pl-3 pr-9 py-2 outline-none w-full
+                        pl-11 pr-3 py-2 outline-none w-full
                         border-2 border-purple-800
                         placeholder-gray-500 duration-200"
-						placeholder="Password"
+						placeholder="Email"
 						disabled={isLoading ? true : false}
 					/>
+				</div>
 
-					<button
-						type="button"
-						class="cursor-pointer text-purple-300"
-						on:click={() => (isPassHidden = !isPassHidden)}
-					>
-						{#if isPassHidden}
-							<EyeOff class="absolute right-3 top-2.5 size-5" />
-						{:else}
-							<Eye class="absolute right-3 top-2.5 size-5" />
-						{/if}
-					</button>
+				<div class="relative">
+					<div class="w-full">
+						<LockKeyhole class="absolute size-5 left-4 top-2.5 text-purple-300" />
+						<input
+							id="password"
+							type={isPassHidden ? 'password' : 'text'}
+							bind:value={password}
+							class="rounded-3xl
+                    	text-gray-300 text-sm
+                        pl-11 pr-9 py-2 outline-none w-full
+                        border-2 border-purple-800
+                        placeholder-gray-500 duration-200"
+							placeholder="Password"
+							disabled={isLoading ? true : false}
+						/>
+
+						<button
+							type="button"
+							class="cursor-pointer text-purple-300"
+							on:click={() => (isPassHidden = !isPassHidden)}
+						>
+							{#if isPassHidden}
+								<EyeOff class="absolute right-3 top-2.5 size-5" />
+							{:else}
+								<Eye class="absolute right-3 top-2.5 size-5" />
+							{/if}
+						</button>
+					</div>
 				</div>
 			</div>
 
