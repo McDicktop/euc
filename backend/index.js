@@ -11,7 +11,17 @@ const port = process.env.PORT || 8080;
 const db = process.env.DB_URL || "mongodb://localhost:27017/";
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: (origin, callback) => {
+        const allowed = ["http://localhost:5173"];
+        if(!origin || allowed.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+}));
 app.use(cookieParser());
 app.use(express.json());
 app.use("/api/auth", authRouter);

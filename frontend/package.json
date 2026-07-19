@@ -36,6 +36,7 @@
 		"@iconify-json/simple-icons": "^1.2.90",
 		"@iconify/svelte": "^5.2.2",
 		"@lucide/svelte": "^1.24.0",
+		"axios": "^1.18.1",
 		"unplugin-icons": "^23.0.1"
 	}
 }
