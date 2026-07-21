@@ -18,7 +18,6 @@ async function publicRequest(path, body) {
         error.code = data.error;
         error.details = data.details;
         error.status = res.status;
-
         throw error;
     }
 
