@@ -18,7 +18,7 @@ export function refreshAccessToken() {
 				}
 
 				const data = await res.json();
-				auth.setAccessToken(data.accessToken);
+				auth.setSession(data.user, data.accessToken);
 				return data.accessToken;
 			})
 			.catch(() => {

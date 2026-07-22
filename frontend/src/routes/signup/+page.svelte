@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { signUp } from '$lib/api/auth';
+	import { tick } from 'svelte';
 
 	const PHONE_RE = /^\+?[1-9]\d{10,14}$/;
 	const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -9,7 +10,10 @@
 	let email = '';
 	let password = '';
 	let repeatedPassword = '';
+
 	let phone = '';
+	let phoneDisplay = '';
+
 	let address = {
 		country: '',
 		city: '',
@@ -18,6 +22,84 @@
 
 	let isSubmitting = false;
 	let errorMessage = '';
+
+	function extractDigits(rawValue) {
+		let digits = rawValue.replace(/\D/g, '');
+
+		if (digits.startsWith('8')) {
+			digits = '7' + digits.slice(1);
+		}
+
+		if (digits.length > 0 && !digits.startsWith('7')) {
+			digits = '7' + digits;
+		}
+
+		return digits.slice(0, 11);
+	}
+
+	function formatPhoneDigits(digits) {
+		const country = digits.slice(0, 1);
+		const area = digits.slice(1, 4);
+		const part1 = digits.slice(4, 7);
+		const part2 = digits.slice(7, 9);
+		const part3 = digits.slice(9, 11);
+
+		if (!country) return '';
+
+		let formatted = `+${country}`;
+
+		if (area) formatted += ` (${area}`;
+		if (area.length === 3) formatted += `)`;
+		if (part1) formatted += ` ${part1}`;
+		if (part2) formatted += `-${part2}`;
+		if (part3) formatted += `-${part3}`;
+
+		return formatted;
+	}
+
+	async function handlePhoneInput(event) {
+		const input = event.currentTarget;
+		const rawValue = input.value;
+		const cursorPos = input.selectionStart ?? rawValue.length;
+
+		const rawDigits = rawValue.replace(/\D/g, '');
+
+		let digitsBeforeCursor = rawValue.slice(0, cursorPos).replace(/\D/g, '').length;
+
+		if (rawDigits.length > 0 && !rawDigits.startsWith('8') && !rawDigits.startsWith('7')) {
+			digitsBeforeCursor++;
+		}
+
+		const digits = extractDigits(input.value);
+		const formatted = formatPhoneDigits(digits);
+
+		phone = digits ? `+${digits}` : '';
+		phoneDisplay = formatted;
+
+		input.value = formatted;
+
+		await tick();
+
+		let newPos = formatted.length;
+		let seenDigits = 0;
+
+		if(digitsBeforeCursor === 0) {
+			newPos = 0;
+		} else {
+			for (let i = 0; i < formatted.length; i++) {
+				if (/\d/.test(formatted[i])) {
+					seenDigits++;
+				}
+
+				if (seenDigits === digitsBeforeCursor) {
+					newPos = i + 1;
+					break;
+				}
+			}
+		}
+
+		input.setSelectionRange(newPos, newPos);
+	}
 
 	function isFormFilledValid() {
 		return !(
@@ -31,7 +113,6 @@
 			password !== repeatedPassword ||
 			(phone && !PHONE_RE.test(phone))
 		);
-        return true
 	}
 
 	async function handleSubmit() {
@@ -46,10 +127,10 @@
 				password,
 				address
 			});
-            goto('/');
+			goto('/');
 		} catch (e) {
-            console.log(e)
-            errorMessage = e.details ? e.details[0] : e.message ? e.message : 'Failed to register';
+			console.log(e);
+			errorMessage = e.details ? e.details[0] : e.message ? e.message : 'Failed to register';
 		} finally {
 			isSubmitting = false;
 		}
@@ -93,11 +174,16 @@
 			<label for="block mb-4">
 				<span class="block text-sm text-gray-500 mb-1">Phone (optional)</span>
 				<input
-					type="text"
-					bind:value={phone}
+					type="tel"
+					inputmode="numeric"
+					placeholder="+7 (999) 999-99-99"
+					on:input={handlePhoneInput}
+					bind:value={phoneDisplay}
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
 			</label>
+
+			<!-- {phone} -->
 		</div>
 		<div class="mb-4">
 			<label for="block mb-4">

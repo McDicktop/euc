@@ -53,34 +53,57 @@ function sendError(res, status, error, message, details) {
 }
 
 function validateSingUpBody(body) {
-
     const errors = {};
 
-    if (typeof body.email !== 'string' || !EMAIL_RE.test(body.email.trim().toLowerCase()) || body.email.trim().length > 64) {
-        errors.email = { message: "EMAIL required, must be a string type and must be a valid e-mail adress" };
+    if (
+        typeof body.email !== "string" ||
+        !EMAIL_RE.test(body.email.trim().toLowerCase()) ||
+        body.email.trim().length > 64
+    ) {
+        errors.email = {
+            message:
+                "EMAIL required, must be a string type and must be a valid e-mail adress",
+        };
     }
 
-    if (typeof body.name !== 'string' || body.name.trim().length > 64) {
-        errors.email = { message: "NAME required, must be a string type and NAME length must be equal or less then 64 chars" };
+    if (typeof body.name !== "string" || body.name.trim().length > 64) {
+        errors.email = {
+            message:
+                "NAME required, must be a string type and NAME length must be equal or less then 64 chars",
+        };
     }
 
-    if (typeof body.password !== 'string' || body.password.trim().length < 6 || body.password.trim().length > 32) {
-        errors.password = { message: "PASSWORD required, must be a string type and PASSWORD length must be from 6 to 3 chars" };
+    if (
+        typeof body.password !== "string" ||
+        body.password.trim().length < 6 ||
+        body.password.trim().length > 32
+    ) {
+        errors.password = {
+            message:
+                "PASSWORD required, must be a string type and PASSWORD length must be from 6 to 3 chars",
+        };
     }
 
     if (body.phone && !PHONE_RE.test(body.phone.trim())) {
-        errors.phone = { message: "PHONE must be a string and valid formatted (+X)" };
+        errors.phone = {
+            message: "PHONE must be a string and valid formatted (+X)",
+        };
     }
 
-    if (typeof body.address !== 'object' ||
+    if (
+        typeof body.address !== "object" ||
         body.address === null ||
         Array.isArray(body.address) ||
-        typeof body.address?.country !== 'string' ||
-        typeof body.address?.city !== 'string' ||
-        typeof body.address?.street !== 'string' ||
+        typeof body.address?.country !== "string" ||
+        typeof body.address?.city !== "string" ||
+        typeof body.address?.street !== "string" ||
         !body.address.country.trim().length ||
-        !body.address.city.trim().length) {
-        errors.address = { message: "COUNTRY, CITY and STREET of ADDRESS are required, must be string types; COUNTRY and CITY must not be empty strings" }
+        !body.address.city.trim().length
+    ) {
+        errors.address = {
+            message:
+                "COUNTRY, CITY and STREET of ADDRESS are required, must be string types; COUNTRY and CITY must not be empty strings",
+        };
     }
 
     if (Object.keys(errors).length > 0) {
@@ -98,12 +121,12 @@ function validateSingUpBody(body) {
         address: {
             country: body.address.country.trim(),
             city: body.address.city.trim(),
-            ...(body.address.street ? { street: body.address.street.trim() } : {}),
-        }
-    }
+            ...(body.address.street
+                ? { street: body.address.street.trim() }
+                : {}),
+        },
+    };
     return data;
-
-
 }
 
 class AuthController {
@@ -255,7 +278,12 @@ class AuthController {
             // });
 
             // return res.status(200).json({ accessToken, userData });
-            return res.status(200).json({ accessToken });
+            return res
+                .status(200)
+                .json({
+                    accessToken,
+                    user: { _id: user._id, email: user.email, name: user.name },
+                });
         } catch (e) {
             console.error(e);
             return sendError(res, 500, "SERVER_ERROR", "Internal server error");
@@ -276,7 +304,7 @@ class AuthController {
                     await User.findByIdAndUpdate(payload.sub, {
                         $unset: { refreshTokenHash: 1 },
                     });
-                } catch (e) { }
+                } catch (e) {}
             }
 
             res.clearCookie(REFRESH_COOKIE_NAME, REFRESH_COOKIE_OPTIONS);
@@ -336,12 +364,25 @@ class AuthController {
             console.error(e);
 
             if (e.name === "ValidationError") {
-                const errors = Object.values(e.errors).map((err) => err.message);
-                return sendError(res, 400, "VALIDATION_ERROR", "Validation failed", errors);
+                const errors = Object.values(e.errors).map(
+                    (err) => err.message,
+                );
+                return sendError(
+                    res,
+                    400,
+                    "VALIDATION_ERROR",
+                    "Validation failed",
+                    errors,
+                );
             }
 
             if (e.code === 11000) {
-                return sendError(res, 400, "PHONE_DUPLICATE", `PHONE ${e.keyValue.phone} is alredy registered`);
+                return sendError(
+                    res,
+                    400,
+                    "PHONE_DUPLICATE",
+                    `PHONE ${e.keyValue.phone} is alredy registered`,
+                );
             }
 
             return sendError(res, 500, "SERVER_ERROR", "Internal server error");

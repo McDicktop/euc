@@ -27,6 +27,8 @@
 			<a href="/" class="font-semibold text-gray-900 text-xl" aria-label="home">NativeWheels</a>
 		</div>
 
+		{console.log($auth)}
+
 		<nav class="flex items-center gap-4 text-sm">
 			{#if $auth.isInitializing}
 				<span class="text-gray-400">...</span>
