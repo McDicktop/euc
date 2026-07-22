@@ -19,7 +19,6 @@ export function refreshAccessToken() {
 
 				const data = await res.json();
 				auth.setAccessToken(data.accessToken);
-
 				return data.accessToken;
 			})
 			.catch(() => {

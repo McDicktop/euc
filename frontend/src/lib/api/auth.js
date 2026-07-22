@@ -25,14 +25,13 @@ async function publicRequest(path, body) {
 }
 
 export function signUp(payload) {
+    // auth.clear();
     return publicRequest("/api/auth/signup", payload);
 }
 
 export async function signIn(email, password) {
     const data = await publicRequest("/api/auth/signin", {email, password});
-
     auth.setSession(data.user, data.accessToken);
-
     return data;
 }
 

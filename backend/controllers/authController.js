@@ -240,6 +240,21 @@ class AuthController {
                 REFRESH_COOKIE_OPTIONS,
             );
 
+            // const userData = user.toObject({
+            //     versionKey: false,
+            //     id: false,
+            //     transform: (doc, ret) => {
+            //         delete ret.phone,
+            //         delete ret.address,
+            //         delete ret.role,
+            //         delete ret.avatar,
+            //         delete ret.password;
+            //         delete ret.refreshTokenHash;
+            //         return ret;
+            //     }
+            // });
+
+            // return res.status(200).json({ accessToken, userData });
             return res.status(200).json({ accessToken });
         } catch (e) {
             console.error(e);

@@ -87,7 +87,8 @@ const UserSchema = new mongoose.Schema({
         refreshTokenHash: {
         type: String,
         required: false,
-        default: null
+        default: null,
+        // select: false ????
     }
 });
 
