@@ -5,9 +5,14 @@
 
 	const PHONE_RE = /^\+?[1-9]\d{10,14}$/;
 	const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+	const EMAIL_DOMAINS = ['mail.ru', 'yandex.ru', 'gmail.com'];
 
 	let name = '';
+
 	let email = '';
+	let emailDisplay = '';
+	let isDomainsDiv = false;
+
 	let password = '';
 	let repeatedPassword = '';
 
@@ -83,7 +88,7 @@
 		let newPos = formatted.length;
 		let seenDigits = 0;
 
-		if(digitsBeforeCursor === 0) {
+		if (digitsBeforeCursor === 0) {
 			newPos = 0;
 		} else {
 			for (let i = 0; i < formatted.length; i++) {
@@ -99,6 +104,87 @@
 		}
 
 		input.setSelectionRange(newPos, newPos);
+	}
+
+	// function sanitizeEmailChars(value) {
+
+	// 	// return value.replace(/[^\w\d.@-]/g, '');
+	// 	// 1. Сначала удаляем все абсолютно запрещенные символы
+	// 	let cleaned = value.replace(/[^\w\d.@-]/g, '');
+
+	// 	// // 2. Запрещаем символ @ в самом начале строки
+	// 	cleaned = cleaned.replace(/^@+/, '');
+
+	// 	// // 2. Оставляем только первый символ @, остальные удаляем
+	// 	// let parts = cleaned.split('@');
+	// 	// if (parts.length > 2) {
+	// 	// 	cleaned = parts[0] + '@' + parts.slice(1).join('');
+	// 	// }
+
+	// 	return cleaned;
+	// }
+	function sanitizeEmailChars(value) {
+		// 1. Удаляем все абсолютно запрещенные символы
+		let cleaned = value.replace(/[^\w\d.@-]/g, '');
+
+		// 2. Запрещаем символ @ в самом начале строки
+		cleaned = cleaned.replace(/^@+/, '');
+
+		// 3. Если @ все еще несколько (например, при массовой вставке текста), оставляем только первый
+		let parts = cleaned.split('@');
+		if (parts.length > 2) {
+			cleaned = parts[0] + '@' + parts.slice(1).join('');
+		}
+
+		return cleaned;
+	}
+
+	function handleEmailInput(event) {
+		isDomainsDiv = false;
+		const input = event.currentTarget;
+		let rawValue = input.value;
+
+		// 1. Запоминаем позицию курсора до изменений
+		let startPos = input.selectionStart;
+
+		// ТОЧЕЧНАЯ БЛОКИРОВКА: Если @ уже есть, перехватываем ввод нового @ прямо под курсором
+		if (emailDisplay.includes('@') && (rawValue.match(/@/g) || []).length > 1) {
+			if (startPos > 0 && rawValue[startPos - 1] === '@') {
+				// Вырезаем именно тот @, который пользователь только что ввел
+				rawValue = rawValue.slice(0, startPos - 1) + rawValue.slice(startPos);
+				// Корректируем позицию курсора, так как введенный символ отклонен
+				startPos--;
+			}
+		}
+
+		// 2. Вырезаем часть строки ДО курсора и очищаем её
+		const leftPartRaw = rawValue.slice(0, startPos);
+
+		const leftPartSanitized = sanitizeEmailChars(leftPartRaw);
+
+		// 3. Считаем, сколько символов было удалено конкретно слева от курсора
+		const removedCharsCount = leftPartRaw.length - leftPartSanitized.length;
+
+		// 4. Очищаем всю строку целиком
+		const sanitized = sanitizeEmailChars(rawValue);
+
+		if (event.data === '@' && !emailDisplay.includes('@')) {
+			isDomainsDiv = true;
+		}
+
+		// 5. Синхронизируем состояние Svelte и DOM
+		emailDisplay = sanitized;
+		input.value = sanitized;
+
+		// 6. Корректируем позицию курсора с учетом удаленных символов
+		const newPos = Math.max(0, startPos - removedCharsCount);
+		input.setSelectionRange(newPos, newPos);
+	}
+
+	function handleDomainSelect(domain) {
+		isDomainsDiv = false;
+		emailDisplay += domain;
+		// console.log(emailDisplay);
 	}
 
 	function isFormFilledValid() {
@@ -159,16 +245,29 @@
 				/>
 			</label>
 		</div>
-		<div class="mb-4">
+		<div class="mb-4 relative">
 			<label for="block mb-4">
 				<span class="block text-sm text-gray-500 mb-1">E-mail (required)</span>
 				<input
-					type="email"
-					bind:value={email}
+					type="text"
+					on:input={handleEmailInput}
+					bind:value={emailDisplay}
 					required
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
 			</label>
+			<div
+				class={`${isDomainsDiv ? 'absolute' : 'hidden'} right-0 border border-gray-300 bg-white rounded-lg p-1 text-sm text-gray-500`}
+			>
+				{#each EMAIL_DOMAINS as domain}
+					<div
+					 class="px-2 py-1 rounded-md hover:bg-gray-200 cursor-pointer duration-200"
+					 on:click={() => handleDomainSelect(domain)}
+					 >
+						@{domain}
+					</div>
+				{/each}
+			</div>
 		</div>
 		<div class="mb-4">
 			<label for="block mb-4">
