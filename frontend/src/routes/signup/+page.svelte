@@ -10,7 +10,6 @@
 	let name = '';
 
 	let email = '';
-	let emailDisplay = '';
 	let isDomainsDiv = false;
 
 	let password = '';
@@ -106,23 +105,6 @@
 		input.setSelectionRange(newPos, newPos);
 	}
 
-	// function sanitizeEmailChars(value) {
-
-	// 	// return value.replace(/[^\w\d.@-]/g, '');
-	// 	// 1. Сначала удаляем все абсолютно запрещенные символы
-	// 	let cleaned = value.replace(/[^\w\d.@-]/g, '');
-
-	// 	// // 2. Запрещаем символ @ в самом начале строки
-	// 	cleaned = cleaned.replace(/^@+/, '');
-
-	// 	// // 2. Оставляем только первый символ @, остальные удаляем
-	// 	// let parts = cleaned.split('@');
-	// 	// if (parts.length > 2) {
-	// 	// 	cleaned = parts[0] + '@' + parts.slice(1).join('');
-	// 	// }
-
-	// 	return cleaned;
-	// }
 	function sanitizeEmailChars(value) {
 		// 1. Удаляем все абсолютно запрещенные символы
 		let cleaned = value.replace(/[^\w\d.@-]/g, '');
@@ -148,7 +130,7 @@
 		let startPos = input.selectionStart;
 
 		// ТОЧЕЧНАЯ БЛОКИРОВКА: Если @ уже есть, перехватываем ввод нового @ прямо под курсором
-		if (emailDisplay.includes('@') && (rawValue.match(/@/g) || []).length > 1) {
+		if (email.includes('@') && (rawValue.match(/@/g) || []).length > 1) {
 			if (startPos > 0 && rawValue[startPos - 1] === '@') {
 				// Вырезаем именно тот @, который пользователь только что ввел
 				rawValue = rawValue.slice(0, startPos - 1) + rawValue.slice(startPos);
@@ -168,12 +150,17 @@
 		// 4. Очищаем всю строку целиком
 		const sanitized = sanitizeEmailChars(rawValue);
 
-		if (event.data === '@' && !emailDisplay.includes('@')) {
+		if (
+			event.data === '@' &&
+			!email.includes('@') &&
+			startPos === email.length + 1 &&
+			email.length
+		) {
 			isDomainsDiv = true;
 		}
 
 		// 5. Синхронизируем состояние Svelte и DOM
-		emailDisplay = sanitized;
+		email = sanitized;
 		input.value = sanitized;
 
 		// 6. Корректируем позицию курсора с учетом удаленных символов
@@ -183,8 +170,7 @@
 
 	function handleDomainSelect(domain) {
 		isDomainsDiv = false;
-		emailDisplay += domain;
-		// console.log(emailDisplay);
+		email += domain;
 	}
 
 	function isFormFilledValid() {
@@ -205,10 +191,12 @@
 		errorMessage = '';
 		isSubmitting = true;
 
+		console.log(email)
+
 		try {
 			await signUp({
 				name,
-				email,
+				email: email,
 				...(phone ? { phone } : {}),
 				password,
 				address
@@ -240,6 +228,7 @@
 				<input
 					type="text"
 					bind:value={name}
+					on:focus={() => (isDomainsDiv = false)}
 					required
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
@@ -251,7 +240,7 @@
 				<input
 					type="text"
 					on:input={handleEmailInput}
-					bind:value={emailDisplay}
+					bind:value={email}
 					required
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
@@ -259,11 +248,14 @@
 			<div
 				class={`${isDomainsDiv ? 'absolute' : 'hidden'} right-0 border border-gray-300 bg-white rounded-lg p-1 text-sm text-gray-500`}
 			>
-				{#each EMAIL_DOMAINS as domain}
+				{#each EMAIL_DOMAINS as domain (domain)}
 					<div
-					 class="px-2 py-1 rounded-md hover:bg-gray-200 cursor-pointer duration-200"
-					 on:click={() => handleDomainSelect(domain)}
-					 >
+						class="px-2 py-1 rounded-md hover:bg-gray-200 cursor-pointer duration-200"
+						role="button"
+						tabindex="0"
+						on:keydown={() => {}}
+						on:click={() => handleDomainSelect(domain)}
+					>
 						@{domain}
 					</div>
 				{/each}
@@ -278,6 +270,7 @@
 					placeholder="+7 (999) 999-99-99"
 					on:input={handlePhoneInput}
 					bind:value={phoneDisplay}
+					on:focus={() => (isDomainsDiv = false)}
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
 			</label>
@@ -290,6 +283,7 @@
 				<input
 					type="text"
 					bind:value={address.country}
+					on:focus={() => (isDomainsDiv = false)}
 					required
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
@@ -301,6 +295,7 @@
 				<input
 					type="text"
 					bind:value={address.city}
+					on:focus={() => (isDomainsDiv = false)}
 					required
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
@@ -312,6 +307,7 @@
 				<input
 					type="text"
 					bind:value={address.street}
+					on:focus={() => (isDomainsDiv = false)}
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
 			</label>
@@ -323,6 +319,7 @@
 				<input
 					type="password"
 					bind:value={password}
+					on:focus={() => (isDomainsDiv = false)}
 					required
 					minlength="6"
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -335,6 +332,7 @@
 				<input
 					type="password"
 					bind:value={repeatedPassword}
+					on:focus={() => (isDomainsDiv = false)}
 					required
 					minlength="6"
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -349,7 +347,7 @@
 		<button
 			type="submit"
 			disabled={isSubmitting || !isFormFilledValid()}
-			class={`w-full mt-12 rounded-md bg-blue-500 text-white font-medium py-2.5 hover:bg-blue-500/75 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-blue-500 transition-colors cursor-pointer`}
+			class="w-full mt-12 rounded-md bg-blue-500 text-white font-medium py-2.5 hover:bg-blue-500/75 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-blue-500 transition-colors cursor-pointer"
 		>
 			{isSubmitting ? 'Singin up...' : 'Sign up'}
 		</button>
