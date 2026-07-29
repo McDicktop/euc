@@ -1,6 +1,10 @@
 <script>
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
+
+	import { goto } from '$app/navigation';
+	import { browser } from '$app/env';
+
 	import { auth } from '$lib/stores/auth';
 	import { restoreSession, logout } from '$lib/api/auth';
 
@@ -17,6 +21,14 @@
 	const HIDDEN_NAV_ROUTES = ['/signin', '/signup'];
 
 	$: hidenNav = HIDDEN_NAV_ROUTES.some((route) => $page.url.pathname.startsWith(route));
+
+	$: if (
+		browser && 
+		$auth.user &&
+		hidenNav
+	) {
+		goto('/', {resplaceState: true});
+	}
 </script>
 
 {#if !hidenNav}
@@ -26,8 +38,6 @@
 		<div class="flex max-w-3xl items-center justify-between w-full">
 			<a href="/" class="font-semibold text-gray-900 text-xl" aria-label="home">NativeWheels</a>
 		</div>
-
-		{console.log($auth)}
 
 		<nav class="flex items-center gap-4 text-sm">
 			{#if $auth.isInitializing}

@@ -5,12 +5,12 @@
 
 	const PHONE_RE = /^\+?[1-9]\d{10,14}$/;
 	const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-	const EMAIL_DOMAINS = ['mail.ru', 'yandex.ru', 'gmail.com'];
+	const EMAIL_DOMAINS = ['mail.ru', 'mail.yahoo.com', 'yandex.ru', 'gmail.com'];
 
 	let name = '';
 
 	let email = '';
-	let isDomainsDiv = false;
+	let emailInputEl;
 
 	let password = '';
 	let repeatedPassword = '';
@@ -62,6 +62,8 @@
 	}
 
 	async function handlePhoneInput(event) {
+		console.log(name);
+
 		const input = event.currentTarget;
 		const rawValue = input.value;
 		const cursorPos = input.selectionStart ?? rawValue.length;
@@ -118,11 +120,33 @@
 			cleaned = parts[0] + '@' + parts.slice(1).join('');
 		}
 
+		const atIndex = cleaned.indexOf('@');
+		if (atIndex === -1) {
+			// TODO: Вернуться к Т9 почты
+			cleaned = cleaned.slice(0, 16);
+		} else {
+			cleaned = cleaned.slice(0, atIndex) + cleaned.slice(atIndex);
+		}
+
 		return cleaned;
 	}
 
+	function getDomainSuggestion(value) {
+		const atIndex = value.indexOf('@');
+		if (atIndex === -1) return '';
+
+		const domainPart = value.slice(atIndex + 1);
+		if (!domainPart) return '';
+
+		const lower = domainPart.toLowerCase();
+		const match = EMAIL_DOMAINS.find((d) => d !== lower && d.startsWith(lower));
+
+		return match ? match.slice(domainPart.length) : '';
+	}
+
+	$: emailSuggestion = getDomainSuggestion(email);
+
 	function handleEmailInput(event) {
-		isDomainsDiv = false;
 		const input = event.currentTarget;
 		let rawValue = input.value;
 
@@ -141,7 +165,6 @@
 
 		// 2. Вырезаем часть строки ДО курсора и очищаем её
 		const leftPartRaw = rawValue.slice(0, startPos);
-
 		const leftPartSanitized = sanitizeEmailChars(leftPartRaw);
 
 		// 3. Считаем, сколько символов было удалено конкретно слева от курсора
@@ -149,15 +172,6 @@
 
 		// 4. Очищаем всю строку целиком
 		const sanitized = sanitizeEmailChars(rawValue);
-
-		if (
-			event.data === '@' &&
-			!email.includes('@') &&
-			startPos === email.length + 1 &&
-			email.length
-		) {
-			isDomainsDiv = true;
-		}
 
 		// 5. Синхронизируем состояние Svelte и DOM
 		email = sanitized;
@@ -168,30 +182,28 @@
 		input.setSelectionRange(newPos, newPos);
 	}
 
-	function handleDomainSelect(domain) {
-		isDomainsDiv = false;
-		email += domain;
-	}
+	async function handleEmailKeydown(event) {
+		if (!emailSuggestion) return;
+		if (event.key !== 'Tab' && event.key !== 'ArrowRight') return;
 
-	function isFormFilledValid() {
-		return !(
-			!name ||
-			!email ||
-			!EMAIL_RE.test(email) ||
-			!address.country ||
-			!address.city ||
-			password.length < 6 ||
-			!repeatedPassword ||
-			password !== repeatedPassword ||
-			(phone && !PHONE_RE.test(phone))
-		);
+		const input = event.currentTarget;
+		const atEnd = input.selectionStart === email.length && input.selectionEnd === email.length;
+
+		if (!atEnd) return;
+
+		event.preventDefault();
+
+		email = email + emailSuggestion;
+
+		await tick();
+		input.setSelectionRange(email.length, email.length);
 	}
 
 	async function handleSubmit() {
 		errorMessage = '';
 		isSubmitting = true;
 
-		console.log(email)
+		console.log(email);
 
 		try {
 			await signUp({
@@ -209,6 +221,19 @@
 			isSubmitting = false;
 		}
 	}
+
+	$: isFormValid = !(
+		!name ||
+		!email ||
+		!EMAIL_RE.test(email) ||
+		!address.country ||
+		!address.city ||
+		password.length < 6 ||
+		!repeatedPassword ||
+		password !== repeatedPassword ||
+		(phone && !PHONE_RE.test(phone))
+	);
+
 </script>
 
 <svelte:head>
@@ -228,24 +253,39 @@
 				<input
 					type="text"
 					bind:value={name}
-					on:focus={() => (isDomainsDiv = false)}
 					required
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
 			</label>
 		</div>
 		<div class="mb-4 relative">
-			<label for="block mb-4">
+			<label class="block mb-4">
 				<span class="block text-sm text-gray-500 mb-1">E-mail (required)</span>
-				<input
-					type="text"
-					on:input={handleEmailInput}
-					bind:value={email}
-					required
-					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-				/>
+
+				<div class="relative">
+					<div
+						aria-hidden="true"
+						class="absolute inset-0 flex items-center whitespace-pre rounded-md border border-black px-3 py-2 text-sm pointer-events-none"
+					>
+						<span class="invisible">{email}</span><span class="text-gray-400"
+							>{emailSuggestion}</span
+						>
+					</div>
+					<input
+						bind:this={emailInputEl}
+						type="text"
+						on:input={handleEmailInput}
+						on:keydown={handleEmailKeydown}
+						bind:value={email}
+						autocomplete="off"
+						autocapitalize="off"
+						spellcheck="false"
+						required
+						class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+					/>
+				</div>
 			</label>
-			<div
+			<!-- <div
 				class={`${isDomainsDiv ? 'absolute' : 'hidden'} right-0 border border-gray-300 bg-white rounded-lg p-1 text-sm text-gray-500`}
 			>
 				{#each EMAIL_DOMAINS as domain (domain)}
@@ -259,7 +299,7 @@
 						@{domain}
 					</div>
 				{/each}
-			</div>
+			</div> -->
 		</div>
 		<div class="mb-4">
 			<label for="block mb-4">
@@ -270,7 +310,6 @@
 					placeholder="+7 (999) 999-99-99"
 					on:input={handlePhoneInput}
 					bind:value={phoneDisplay}
-					on:focus={() => (isDomainsDiv = false)}
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
 			</label>
@@ -283,7 +322,6 @@
 				<input
 					type="text"
 					bind:value={address.country}
-					on:focus={() => (isDomainsDiv = false)}
 					required
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
@@ -295,7 +333,6 @@
 				<input
 					type="text"
 					bind:value={address.city}
-					on:focus={() => (isDomainsDiv = false)}
 					required
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
@@ -307,7 +344,6 @@
 				<input
 					type="text"
 					bind:value={address.street}
-					on:focus={() => (isDomainsDiv = false)}
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				/>
 			</label>
@@ -319,7 +355,6 @@
 				<input
 					type="password"
 					bind:value={password}
-					on:focus={() => (isDomainsDiv = false)}
 					required
 					minlength="6"
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -332,7 +367,6 @@
 				<input
 					type="password"
 					bind:value={repeatedPassword}
-					on:focus={() => (isDomainsDiv = false)}
 					required
 					minlength="6"
 					class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -346,7 +380,7 @@
 
 		<button
 			type="submit"
-			disabled={isSubmitting || !isFormFilledValid()}
+			disabled={isSubmitting || !isFormValid}
 			class="w-full mt-12 rounded-md bg-blue-500 text-white font-medium py-2.5 hover:bg-blue-500/75 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-blue-500 transition-colors cursor-pointer"
 		>
 			{isSubmitting ? 'Singin up...' : 'Sign up'}
