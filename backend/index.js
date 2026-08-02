@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 
 const authRouter = require("./routers/authRouter.js");
 const mediaRouter = require("./routers/mediaProxy.router.js");
+const pmvRouter = require("./routers/pmvRouter.js");
 
 const port = process.env.PORT || 8080;
 const db = process.env.DB_URL || "mongodb://localhost:27017/";
@@ -26,6 +27,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/media", mediaRouter);
+app.use("/api/pmv", pmvRouter);
 
 
 const start = async () => {

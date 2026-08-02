@@ -65,6 +65,9 @@ export async function apiJson(path, options = {}) {
     const res = await apiFetch(path, options);
     const data = await res.json().catch(() => ({}));
 
+	console.log('test!')
+	console.log(res)
+
     if(!res.ok) {
         const error = new Error(data.message || "Request failed");
         error.code = data.error;

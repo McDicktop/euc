@@ -11,6 +11,7 @@ function createAuthStore() {
 	return {
 		subscribe,
 		setSession(user, accessToken) {
+			localStorage.setItem('token', accessToken);
 			set({ user, accessToken, isAuthenticated: true, isInitializing: false });
 		},
 		setAccessToken(accessToken) {
