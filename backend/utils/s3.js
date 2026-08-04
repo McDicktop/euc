@@ -12,8 +12,6 @@ const s3 = new S3Client({
     forcePathStyle: true,
 });
 
-
-
 const BUCKET = process.env.S3_BUCKET;
 
 const uploadToS3 = async(file, folder = "uploads") => {

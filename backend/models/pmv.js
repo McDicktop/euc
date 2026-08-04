@@ -13,7 +13,7 @@ const PMVSchema = new mongoose.Schema({
         required: true,
         enum: PMV_CATS,
     },
-    coverUrl: {
+    coverKey: {
         type: String,
     },
     userId: {

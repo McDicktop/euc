@@ -5,6 +5,8 @@ const User = require("../models/user.js");
 const { PHONE_RE, EMAIL_RE } = require("../constants.js");
 const { listS3Objects } = require("../utils/s3.js");
 
+const { sendError } = require("../utils/sendError.js");
+
 const MIN_PASSWORD_LENGTH = 10;
 const SALT_ROUNDS = 10;
 
@@ -44,12 +46,6 @@ async function issueTokenPair(user) {
     await user.save();
 
     return { accessToken, refreshToken };
-}
-
-function sendError(res, status, error, message, details) {
-    return res
-        .status(status)
-        .json({ message, error, ...(details ? { details } : {}) });
 }
 
 function validateSingUpBody(body) {

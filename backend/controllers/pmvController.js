@@ -1,9 +1,13 @@
+const mongoose = require("mongoose");
 const User = require("../models/user.js");
 const Pmv = require("../models/pmv.js");
 
-const cats = require("../constants.js");
+const { PMV_CATS } = require("../constants.js");
 
-const mongoose = require("mongoose");
+const { sendError } = require("../utils/sendError.js");
+
+const { uploadToS3 } = require("../utils/s3.js");
+
 
 class PMV {
     async getPmvs(req, res) {
@@ -19,44 +23,77 @@ class PMV {
             });
         }
     }
+
     async addPmv(req, res) {
         try {
 
-            console.log(req.body)
+            const file = req.file;
 
-            if (!req.body) {
-                return res.status(401).json({
-                    message: "Get no data",
-                    error: "DATA_MISSING",
+            if (!file) {
+                return res.status(400).json({
+                    message: "Cover image must be upload",
+                    error: "MISSING_IMAGE"
                 });
             }
 
-            const { name, category, coverUrl, userId } = req.body;
+            const { name, category, userId } = req.body;
 
-            // 1. Валидация данных и проверка существования пользователя
-            // if (
-            //     typeof name !== "string" ||
-            //     typeof category !== "string" ||
-            //     !cats.includes(category) ||
-            //     typeof coverUrl !== "string" ||
-            //     !mongoose.Schema.Types.ObjectId(userId)
-            // ) {
-            //     return res.status(400).json({
-            //         message: "",
-            //         error: "INVALID_DATA"
-            //     });
-            // }
+            if (
+                typeof name !== "string" ||
+                typeof category !== "string" ||
+                !PMV_CATS.includes(category)
+            ) {
+                return res.status(400).json({
+                    message: "'name' and 'category' must exist and be of String type and 'category' must be registered",
+                    error: "INVALID_DATA"
+                });
+            }
+
+            if (typeof userId !== 'string' || !mongoose.isValidObjectId(userId)) {
+                return res.status(400).json({
+                    message: "'userId' must be of ObjectId type",
+                    error: "INVALID_DATA"
+                });
+            }
+
+            const user = await User.findOne({ _id: userId });
+
+            if (!user) {
+                return res.status(404).json({
+                    message: "User not find",
+                    error: "MISSING_USER"
+                });
+            }
 
             // 2. загрузка файла в s3 и получние ключа на него
 
+            let coverKey;
+
+            try {
+                coverKey = await uploadToS3(file, "cover");
+                
+                if (!coverKey) {
+                    return res.status(400).json({
+                        message: "Uploading to S3 failed",
+                        error: "UPLOADING_FAILED"
+                    });
+                }
+
+            } catch (e) {
+                console.log(e)
+                return res.status(400).json({
+                    message: "Uploading to S3 failed",
+                    error: "UPLOADING_FAILED"
+                });
+            }
 
             // 3. Сохранение в Б
-            // let obj = {...req.body, cover: file.key}
 
-            const newPmv = Pmv(req.body);
+            const newPmv = Pmv({ name, category, userId, coverKey });
             await newPmv.save();
 
             return res.status(200).send(newPmv);
+            // return res.status(200).send(req.body);
         } catch (e) {
             console.log(e);
             return res.status(400).json({
