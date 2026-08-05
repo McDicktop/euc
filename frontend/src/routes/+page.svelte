@@ -61,7 +61,8 @@
 		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
 			{#each cards as card (card._id)}
 				<a
-					href={`/files/${photoIdFromKey(card.coverKey)}`}
+					// href={`/files/${photoIdFromKey(card.coverKey)}`}
+					href={``}
 					class="group block rounded-xl border border-gray-200 bg-gray-100 p-4"
 				>
 					<div class="flex flex-col gap-2 items-center justify-center">

@@ -13,7 +13,7 @@ const SALT_ROUNDS = 10;
 // Access - короткоживузий токен для запросов
 // Refresh - долгоживущий токен для выпуска нового Access
 
-const ACCESS_TOKEN_EXPIRES_IN = "1h";
+const ACCESS_TOKEN_EXPIRES_IN = "1d";
 const REFRESH_TOKEN_EXPIRES_IN = "30d";
 const REFRESH_TOKEN_EXPIRES_IN_MS = 30 * 24 * 60 * 60 * 1000; // 30 дней в ms
 const REFRESH_COOKIE_NAME = "refreshToken";

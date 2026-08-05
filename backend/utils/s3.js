@@ -2,6 +2,8 @@ const { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } 
 const { v4 } = require("uuid");
 const path = require("path");
 
+const { processImage } = require("./imageProcessor.js");
+
 const s3 = new S3Client({
     endpoint: process.env.S3_ENDPOINT,
     region: process.env.S3_REGION,
@@ -15,15 +17,30 @@ const s3 = new S3Client({
 const BUCKET = process.env.S3_BUCKET;
 
 const uploadToS3 = async(file, folder = "uploads") => {
-    const ext = path.extname(file.originalname); // ext = ".jpg"  (например)
+    // const ext = path.extname(file.originalname); // ext = ".jpg"  (например)
+    // const key = `${folder}/${v4()}${ext}`;
+
+    // await s3.send(
+    //     new PutObjectCommand({
+    //         Bucket: BUCKET,
+    //         Key: key,
+    //         Body: file.buffer,
+    //         ContentType: file.mimetype,
+    //     })
+    // );
+
+    // Сжактое фото
+
+    const { buffer, mimetype, ext } = await processImage(file);
+
     const key = `${folder}/${v4()}${ext}`;
 
     await s3.send(
         new PutObjectCommand({
             Bucket: BUCKET,
             Key: key,
-            Body: file.buffer,
-            ContentType: file.mimetype,
+            Body: buffer,
+            ContentType: mimetype,
         })
     );
 

@@ -5,7 +5,7 @@ const { upload, multerErrorHandler } = require("../utils/multer.js");
 const Router = require("express");
 const router = new Router();
 
-const uploadSingleCover = multerErrorHandler(upload.single("cover"));
+const uploadSingleCover = multerErrorHandler(upload.single("file"));
 
 router.get("/", requireAuth, controller.getPmvs);
 router.post("/", requireAuth, uploadSingleCover, controller.addPmv);

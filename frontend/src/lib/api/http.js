@@ -36,12 +36,14 @@ export function refreshAccessToken() {
 export async function apiFetch(path, options = {}) {
 	const { accessToken } = get(auth);   // ????????????????
 
+	const isFormData = options.body instanceof FormData;
+
 	const doFetch = (token) =>
 		fetch(`${API_BASE_URL}${path}`, {
 			...options,
 			credentials: 'include',
 			headers: {
-				...(options.body ? { 'Content-Type': 'application/json' } : {}),
+				...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
 				...(token ? { Authorization: `Bearer ${token}` } : {}),
 				...options.headers
 			}
