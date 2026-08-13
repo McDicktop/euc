@@ -31,6 +31,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/media", mediaRouter);
 app.use("/api/pmv", pmvRouter);
 
+console.log(mongoose.version)
 
 const start = async () => {
     try {
