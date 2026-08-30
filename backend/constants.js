@@ -13,4 +13,6 @@ const PMV_CATS_LABELS = {
 
 const PMV_STATUSES = ['available', 'rented', 'lost', 'maintenance'];
 
+const ATTRIBUTE_TYPES = ["string", "number", "boolean", "enum", "multi_enum"]
+
 module.exports = { IMAGE_URL_RE, URL_RE, PHONE_RE, EMAIL_RE, PMV_CATS, PMV_CATS_LABELS, PMV_STATUSES };

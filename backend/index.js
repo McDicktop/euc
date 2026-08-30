@@ -29,9 +29,16 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use("/api/auth", authRouter);
 app.use("/api/media", mediaRouter);
-app.use("/api/pmv", pmvRouter);
 
-console.log(mongoose.version)
+app.use("/api/pmvs", pmvRouter);
+// app.use("/api/categories", );
+
+// // admin
+// app.use("/api/admin/categories", );
+// app.use("/api/admin/attributes", );
+
+
+
 
 const start = async () => {
     try {

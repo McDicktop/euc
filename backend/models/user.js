@@ -1,19 +1,3 @@
-// {
-//     email,
-//     name,
-//     password,
-//     avatarUrl: default url, // аватарка - после регистрации
-//     phone: optional,
-//     adress: {
-//         country (RF),
-//         city,
-//         street: Optional,
-//     }, // адрес -
-//     bio: Optional, // пока пустая строка ''
-//     verify, // ----
-//     role // admin - first user
-// }
-
 const mongoose = require("mongoose");
 const { PHONE_RE, EMAIL_RE } = require("../constants.js")
 

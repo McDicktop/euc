@@ -29,26 +29,6 @@
 	) {
 		goto('/', {resplaceState: true});
 	}
-
-	class Person{
-		constructor(name) {
-			this.name = name;
-		}
-
-		getInfo() {
-			return this.name;
-		}
-	}
-
-	const user = new Person('Petr');
-	const user_prototype = Object.getPrototypeOf(user);
-
-	console.log(user_prototype === Person.prototype)
-
-	console.log(user.constructor === Person)
-
-	// console.log(user instanceof Person)
-
 </script>
 
 {#if !hidenNav}
