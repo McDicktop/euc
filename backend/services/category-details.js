@@ -33,7 +33,13 @@ function buildField(attribute, categoryAttribute) {
 
 
 function buildDetailsSchema(category) {
+    const shape = {};
 
+    for(const categoryAttribute of category.attributes) {
+        const attribute = categoryAttribute.attribute;
+        if(!attribute || attribute.deprecated) continue;
+        shape[attribute.key] = buildField(attribute, categoryAttribute);
+    }
 }
 
 async function getCategoryWithAttributes(id) {
@@ -43,7 +49,14 @@ async function getCategoryWithAttributes(id) {
 }
 
 async function validateDetails(categoryId, details) {
+    const category = await getCategoryWithAttributes(categoryId);
+    if(!category.isActive) throw new HttpError(409, "Category is inactive");
 
+    const { value, error } = buildDetailsSchema(category).validate(details);
+
+    if(error) throw new HttpError(422, "Invalid category detsails", error.details.map(({message, path}) => ({path, message})));
+
+    return value;
 }
 
 module.exports = { buildField, getCategoryWithAttributes, validateDetails };

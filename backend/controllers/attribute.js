@@ -29,7 +29,7 @@ exports.update = asyncHandler(async(req, res) => {
     res.json(attribute);
 })
 
-exports.remove = asyncHandler(async (req, res) => {
+exports.delete = asyncHandler(async (req, res) => {
     // проверить что атрибует испольщуется в категории 
     // если что цепляем deprecated 
 
