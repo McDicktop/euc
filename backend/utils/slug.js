@@ -4,7 +4,7 @@ function makeSlug(value) {
     return slugify(value, { lower: true, strict: true, locale: "ru", trim: true })
 }
 
-modules.exports = { makeSlug };
+module.exports = { makeSlug };
 
 
 

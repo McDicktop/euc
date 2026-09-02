@@ -96,6 +96,7 @@ function validate(schema, value) {
         stripUnknown: true,
     });
     if (error) error.status = 422;
+
     return parsed;
 }
 

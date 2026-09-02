@@ -22,9 +22,10 @@ async function assertAttributesExist(items) {
 }
 
 exports.list = asyncHandler(async (req, res) => {
-    const categories = (
-        await Category.find().select("slug name parent isActive attributes")
-    ).sort({ name: 1 });
+    // const categories = (
+    //     await Category.find().select("slug name parent isActive attributes")
+    // ).sort({ name: 1 });
+    const categories = await Category.find().select("slug name parent isActive attributes");
     res.json(categories);
 });
 

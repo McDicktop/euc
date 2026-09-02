@@ -1,15 +1,15 @@
-const { controller } = require("../controllers/pmvController");
+const controller = require("../controllers/pmvController");
 const { requireAuth } = require("../middlewares/requireAuth");
 const { upload, multerErrorHandler } = require("../utils/multer.js");
-const 
+
 
 const Router = require("express");
 const router = new Router();
 
 const uploadSingleCover = multerErrorHandler(upload.single("file"));
 
-router.get("/", requireAuth, controller.getPmvs);
-router.post("/", requireAuth, uploadSingleCover, controller.addPmv);
+router.get("/:id", requireAuth, controller.get);
+router.post("/", requireAuth, uploadSingleCover, controller.create);
 
 module.exports = router;
 

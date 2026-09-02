@@ -26,10 +26,12 @@ const AttributeSchema = new mongoose.Schema(
         filterable: { type: Boolean, default: false },
         deprecated: { type: Boolean, default: false },
     },
-    { timestamps: true, versionKey: true },
+    // { timestamps: true, versionKey: true },
+    { timestamps: true },
 );
 
-AttributeSchema.pre("validate", function validateAttribute(next) {
+// AttributeSchema.pre("validate", function validateAttribute(next) {
+AttributeSchema.pre("validate", function validateAttribute() {
     const needsOptions = this.type === "enum" || this.type === "multi_enum";
 
     if (needsOptions && (!this.options || this.options.length === 0)) {
@@ -48,7 +50,7 @@ AttributeSchema.pre("validate", function validateAttribute(next) {
         this.invalidate("max", "max must be greater than or equal to min");
     }
 
-    next();
+    // next();
 });
 
 module.exports = mongoose.model("Attribute", AttributeSchema);
