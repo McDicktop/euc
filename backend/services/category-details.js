@@ -8,8 +8,8 @@ function buildField(attribute, categoryAttribute) {
     switch(attribute.type) {
         case "number":
             field = Joi.number();
-            if((categoryAttribute.min ?? attribute.min) !== null) field.field.min(categoryAttribute.min ?? attribute.min);
-            if((categoryAttribute.max ?? attribute.max) !== null) field.field.max(categoryAttribute.max ?? attribute.max);
+            if((categoryAttribute.min ?? attribute.min) !== null) field.min(categoryAttribute.min ?? attribute.min);
+            if((categoryAttribute.max ?? attribute.max) !== null) field.max(categoryAttribute.max ?? attribute.max);
             break;
 
         case "boolean":
@@ -28,7 +28,7 @@ function buildField(attribute, categoryAttribute) {
             field = Joi.string().trim().max(500);
     }
 
-    return categoryAttribute ? field.required() : field.optional();
+    return categoryAttribute.required ? field.required() : field.optional();
 }
 
 
@@ -40,6 +40,8 @@ function buildDetailsSchema(category) {
         if(!attribute || attribute.deprecated) continue;
         shape[attribute.key] = buildField(attribute, categoryAttribute);
     }
+    
+    return Joi.object(shape).options({ abortEarly: false, stripUnknown: true });
 }
 
 async function getCategoryWithAttributes(id) {

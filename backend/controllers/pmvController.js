@@ -13,6 +13,8 @@ const {
 
 const { HttpError, asyncHandler } = require("../utils/http");
 
+const { uploadToS3, deleteFromS3 } = require("../services/s3");
+
 function detailsObject(details) {
     return details instanceof Map ? Object.fromEntries(details) : details || {};
 }
@@ -105,15 +107,23 @@ exports.list = asyncHandler(async (req, res) => {
         }
     }
 
-
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 10), 100);
-    const page = Math.max(Number(req.qeury.page) || 1, 1);
+    const page = Math.max(Number(req.query.page) || 1, 1);
 
+    console.log(query, limit, page);
+
+    const result = await PMV.find({});
+
+    console.log(result);
 
     const [items, total] = await Promise.all([
-        (await PMV.find(query).populate("category")).toSorted({
-            createdAt: -1,
-        }).skip((page - 1) * limit).limit(limit),
+        PMV.find(query)
+            .populate("category")
+            .sort({
+                createdAt: -1,
+            })
+            .skip((page - 1) * limit)
+            .limit(limit),
         PMV.countDocuments(query),
     ]);
 
@@ -130,12 +140,56 @@ exports.get = asyncHandler(async (req, res) => {
 });
 
 exports.create = asyncHandler(async (req, res) => {
-    const payload = validate(req.body, pmvCreateSchema);
-    payload.details = validateDetails(payload.category, payload.details);
+    // const payload = validate(pmvCreateSchema, req.body);
+    // payload.details = await validateDetails(payload.category, payload.details);
 
-    const pmv = await PMV.create(payload);
+    // // console.log(payload.details)
 
-    res.status(201).json(await PMV.findById(pmv.id).populate("category"));
+    // const pmv = await PMV.create(payload);
+
+    // res.status(201).json(await PMV.findById(pmv.id).populate("category"));
+
+    const body = { ...req.body };
+    const files = Array.isArray(req.files) ? req.files : [];    
+
+    for(let field of ["details", "images", "location"]) {
+        if(typeof body[field] === "string") {
+            try {
+                body[field] = JSON.parse(body[field]);
+            } catch (error) {
+                throw new HttpError(422, `Invalid JSON in field ${field}`);
+            }
+        }
+    }
+
+    if (files.length) {
+        body.images = body.images = { coverKey: "uploading", gallery: [] };
+    }
+
+    const payload = validate(pmvCreateSchema, body);
+    payload.details = await validateDetails(payload.category, payload.details);
+    let uploaded;
+
+    try{
+        if(files.length) {
+            const uploads = await Promise.all(
+                files.map(file => uploadToS3(file, "pmvs")));
+
+            uploaded = uploads;
+            payload.images = {
+                coverKey: uploads[0].key,
+                gallery: uploads.slice(1).map(({ key }) => key)
+            }
+        }
+
+        const pmv = await PMV.create(payload);
+        return res.status(201).json(await PMV.findById(pmv.id).populate("category"));
+    } catch (error) {
+        if(uploaded.length) {
+            await Promise.all(uploaded.map(({key}) => deleteFromS3(key).catch(() => {})));
+            throw error;
+        }
+    }
 });
 
 exports.update = asyncHandler(async (req, res) => {
@@ -163,5 +217,9 @@ exports.update = asyncHandler(async (req, res) => {
 exports.delete = asyncHandler(async (req, res) => {
     const pmv = await PMV.findByIdAndDelete(req.params.id);
     if (!pmv) throw new HttpError(404, "PMV not found");
+
+    const imageKeys = [pmv.images?.coverKey, ...(pmv.images?.gallery || [])].filter(Boolean);
+    await Promise.all(imageKeys.map(key => deleteFromS3(key).catch(() => {})));
+
     res.status(204).end();
 });

@@ -1,6 +1,5 @@
 const multer = require('multer');
-
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const {IMAGES_TYPES} = require("../constants");
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -9,7 +8,7 @@ const upload = multer({
         files: 5
     },
     fileFilter: (_req, file, cb) => {
-        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+        if (!IMAGES_TYPES.includes(file.mimetype)) {
             return cb(new Error(`Invalid file type: ${file.mimetype}`))
         }
         cb(null, true);

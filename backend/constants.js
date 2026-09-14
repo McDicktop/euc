@@ -11,8 +11,10 @@ const PMV_CATS_LABELS = {
     euc: "Monowheel",
 }
 
+const IMAGES_TYPES = new Set(["image/png", "image/webp", "image/jpeg", "image/heif", "image/heic"]);
+
 const PMV_STATUSES = ['available', 'rented', 'lost', 'maintenance'];
 
 const ATTRIBUTE_TYPES = ["string", "number", "boolean", "enum", "multi_enum"]
 
-module.exports = { IMAGE_URL_RE, URL_RE, PHONE_RE, EMAIL_RE, PMV_CATS, PMV_CATS_LABELS, PMV_STATUSES, ATTRIBUTE_TYPES };
+module.exports = { IMAGE_URL_RE, URL_RE, PHONE_RE, EMAIL_RE, PMV_CATS, PMV_CATS_LABELS, PMV_STATUSES, ATTRIBUTE_TYPES, IMAGES_TYPES };

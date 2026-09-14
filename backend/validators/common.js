@@ -39,7 +39,7 @@ const categorySchema = Joi.object({
     isActive: Joi.boolean().default(true),
 });
 
-const pmvCreateschema = Joi.object({
+const pmvCreateSchema = Joi.object({
     slug: Joi.string().trim().min(1).max(64).required(),
     name: Joi.string().trim().min(4).max(100).required(),
     description: Joi.string().allow("").max(2000).required(),
@@ -100,6 +100,6 @@ function validate(schema, value) {
     return parsed;
 }
 
-module.exports = { objectId, validate, attributeSchema, pmvCreateschema, pmvUpdateSchema, categorySchema };
+module.exports = { objectId, validate, attributeSchema, pmvCreateSchema, pmvUpdateSchema, categorySchema };
 
 // {parsed, error} = categorySchema.validate({ }, sdfsdf)
