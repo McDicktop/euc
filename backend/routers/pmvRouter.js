@@ -2,11 +2,11 @@ const router = require("express").Router();
 
 const controller = require("../controllers/pmvController");
 const { requireAuth } = require("../middlewares/requireAuth");
-const { upload, multerErrorHandler } = require("../middleware/upload");
+const { upload, multerErrorHandler } = require("../middlewares/upload");
 
 router.get("/", controller.list);
 router.get("/:id", requireAuth, controller.get);
-router.post("/", requireAuth, multerErrorHandler(upload.array("images, 5")), controller.create);
+router.post("/", multerErrorHandler(upload.array("images", 5)), controller.create);
 router.patch("/:id", controller.update);
 router.delete("/:id", controller.delete);
 

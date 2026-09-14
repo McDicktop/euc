@@ -1,27 +1,29 @@
 const sharp = require("sharp");
 const { HttpError, asyncHandler } = require("../utils/http");
-const {IMAGES_TYPES} = require("../constants");
+const { IMAGES_TYPES } = require("../constants");
 
 async function processImage(file) {
-    if(!file || !file.buffer) throw new HttpError(422, "Image file is required");
-    if(!IMAGES.IMAGES_TYPES.has(file.mimetype)) throw new HttpError(422, "ONLY PNG, WEBP, JPEG, HEIF, HEIC images are allowed");
+    if (!file || !file.buffer) throw new HttpError(422, "Image file is required");
+    if (!IMAGES_TYPES.has(file.mimetype)) throw new HttpError(422, "ONLY PNG, WEBP, JPEG, HEIF, HEIC images are allowed");
+
+
 
     try {
-        const buffer = await sharp(file.buffer, {limitInputPixels: 16e6})
+        const buffer = await sharp(file.buffer, { limitInputPixels: 16e6 })
             .rotate()
             .resize({
                 width: 1280,
-                height: 960, fit: "inside", withoutEnlargement: true})
-            .webp({quality: 90, effort: 4})
+                height: 960, fit: "inside", withoutEnlargement: true
+            })
+            .webp({ quality: 90, effort: 4 })
             .toBuffer();
-
-        return {buffer, mimetype: "image/webp", ext: ".webp"};
+        return { buffer, mimetype: "image/webp", ext: ".webp" };
     } catch (error) {
         throw new HttpError(422, "Image processing error");
     }
 }
 
-module.exports = {processImage};
+module.exports = { processImage };
 
 // const MAX_DIMENTIONS = 1080;
 
@@ -29,7 +31,7 @@ module.exports = {processImage};
 //     const image = sharp(file.buffer, {failOn: "none"});
 //     const metadata = await image.metadata();
 
-//     const needsResize = 
+//     const needsResize =
 //         (metadata.width && metadata.width > MAX_DIMENTIONS) ||
 //         (metadata.height && metadata.height > MAX_DIMENTIONS);
 

@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 
 const User = require("../models/user.js");
 const { PHONE_RE, EMAIL_RE } = require("../constants.js");
-const { listS3Objects } = require("../utils/s3.js");
+const { listS3Objects } = require("../services/s3.js");
 
 const { sendError } = require("../utils/sendError.js");
 

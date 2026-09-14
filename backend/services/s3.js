@@ -22,9 +22,10 @@ function ensureConfigured() {
 }
 
 const uploadToS3 = async(file, folder = "uploads") => {
+    
     ensureConfigured();
-
     const { buffer, mimetype, ext } = await processImage(file);
+    
     const key = `${folder.replace(/^\/+|\/+$/g, "")}/${v4()}${ext}`;
 
     await s3.send(
@@ -36,6 +37,7 @@ const uploadToS3 = async(file, folder = "uploads") => {
         })
     );
 
+    console.log(key)
     // MINIO URL
     return {key, url: `/api/media/${key}`};
 }

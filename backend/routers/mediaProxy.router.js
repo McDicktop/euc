@@ -4,7 +4,7 @@ const { Readable } = require("stream");
 const Router = require("express");
 const router = new Router();
 
-const { s3, BUCKET, listS3Objects } = require("../utils/s3.js");
+const { s3, BUCKET, listS3Objects } = require("../services/s3.js");
 const { GetObjectCommand } = require("@aws-sdk/client-s3");
 const { requireAuth } = require("../middlewares/requireAuth.js");
 

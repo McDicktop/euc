@@ -31,8 +31,8 @@ function typeFilter(attribute, raw, operation) {
         attribute.type === "number"
             ? Number(raw)
             : attribute.type === "boolean"
-              ? "raw" === "true"
-              : raw;
+                ? "raw" === "true"
+                : raw;
     if (attribute.type === "number" && Number.isNaN(value))
         throw new HttpError(422, `Filter ${attribute.key} must be numeric`);
     if (operation) return { [operation]: value };
@@ -150,10 +150,10 @@ exports.create = asyncHandler(async (req, res) => {
     // res.status(201).json(await PMV.findById(pmv.id).populate("category"));
 
     const body = { ...req.body };
-    const files = Array.isArray(req.files) ? req.files : [];    
+    const files = Array.isArray(req.files) ? req.files : [];
 
-    for(let field of ["details", "images", "location"]) {
-        if(typeof body[field] === "string") {
+    for (let field of ["details", "images", "location"]) {
+        if (typeof body[field] === "string") {
             try {
                 body[field] = JSON.parse(body[field]);
             } catch (error) {
@@ -167,26 +167,37 @@ exports.create = asyncHandler(async (req, res) => {
     }
 
     const payload = validate(pmvCreateSchema, body);
+
     payload.details = await validateDetails(payload.category, payload.details);
+
     let uploaded;
 
-    try{
-        if(files.length) {
+
+
+    try {
+        if (files.length) {
+            
             const uploads = await Promise.all(
                 files.map(file => uploadToS3(file, "pmvs")));
 
+           
+
             uploaded = uploads;
+
             payload.images = {
                 coverKey: uploads[0].key,
                 gallery: uploads.slice(1).map(({ key }) => key)
             }
+
         }
+
+
 
         const pmv = await PMV.create(payload);
         return res.status(201).json(await PMV.findById(pmv.id).populate("category"));
     } catch (error) {
-        if(uploaded.length) {
-            await Promise.all(uploaded.map(({key}) => deleteFromS3(key).catch(() => {})));
+        if (uploaded.length) {
+            await Promise.all(uploaded.map(({ key }) => deleteFromS3(key).catch(() => { })));
             throw error;
         }
     }
@@ -219,7 +230,7 @@ exports.delete = asyncHandler(async (req, res) => {
     if (!pmv) throw new HttpError(404, "PMV not found");
 
     const imageKeys = [pmv.images?.coverKey, ...(pmv.images?.gallery || [])].filter(Boolean);
-    await Promise.all(imageKeys.map(key => deleteFromS3(key).catch(() => {})));
+    await Promise.all(imageKeys.map(key => deleteFromS3(key).catch((e) => { })));
 
     res.status(204).end();
 });

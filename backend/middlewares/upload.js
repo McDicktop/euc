@@ -8,7 +8,7 @@ const upload = multer({
         files: 5
     },
     fileFilter: (_req, file, cb) => {
-        if (!IMAGES_TYPES.includes(file.mimetype)) {
+        if (!IMAGES_TYPES.has(file.mimetype)) {
             return cb(new Error(`Invalid file type: ${file.mimetype}`))
         }
         cb(null, true);
@@ -18,6 +18,7 @@ const upload = multer({
 
 const multerErrorHandler = (uploadMiddleware) => (req, res, next) => {
     uploadMiddleware(req, res, (err) => {
+
         if (!err) return next();
 
         if (err instanceof multer.MulterError) {
