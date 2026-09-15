@@ -1,4 +1,4 @@
-<!-- <script>
+<script>
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 
@@ -59,13 +59,4 @@
 	{:else}
 		<slot />
 	{/if}
-</main> -->
-
-
-<script>
-	import './layout.css';
-	
-	let { children } = $props();
-</script>
-
-{@render children()}
+</main>

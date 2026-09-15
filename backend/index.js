@@ -30,18 +30,11 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use("/api/auth", authRouter);
-app.use("/api/media", mediaRouter);
+// app.use("/api/media", mediaRouter);
 
 app.use("/api/pmvs", pmvRouter);
 app.use("/api/attributes", attributeRouter);
 app.use("/api/categories", categoryRouter);
-
-// // admin
-// app.use("/api/admin/categories", );
-// app.use("/api/admin/attributes", );
-
-
-
 
 const start = async () => {
     try {

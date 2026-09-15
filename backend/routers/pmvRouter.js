@@ -5,11 +5,11 @@ const { requireAuth } = require("../middlewares/requireAuth");
 const { upload, multerErrorHandler } = require("../middlewares/upload");
 
 router.get("/", controller.list);
-router.get("/:id", requireAuth, controller.get);
+// router.get("/:id", requireAuth, controller.get);
+router.get("/:id", controller.get);
 router.post("/", multerErrorHandler(upload.array("images", 5)), controller.create);
 router.patch("/:id", controller.update);
 router.delete("/:id", controller.delete);
-
 
 module.exports = router;
 
