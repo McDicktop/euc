@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { api } from '$lib/api';
+	import ListingCard from '$lib/components/ListingCard.svelte';
 
 	let categories = [];
 	let listings = [];
@@ -26,13 +27,7 @@
 
 			if (selectedCategory) query.set('category', selectedCategory);
 
-			console.log(`http://localhost:3000/api/pmvs`)
-			// console.log(`http://localhost:3000/api/pmvs?${query}`)
-
 			const data = await api(`http://localhost:3000/api/pmvs?${query}`);
-
-			console.log(data)
-
 			listings = data.items;
 			pagination = data.pagination;
 		} catch (err) {
@@ -127,6 +122,7 @@
 						class:bg-gray-50={selectedCategory !== item.slug}
 						class:text-gray-800={selectedCategory !== item.slug}
 						on:click={() => {
+							console.log(item.slug)
 							selectedCategory = item.slug;
 							load(1);
 						}}
@@ -152,7 +148,10 @@
 		{:else if listings.length}
 			<div class="grid grid-cols-3 gap-6">
 				{#each listings as item (item._id)}
-					<!-- <ListingCard {item} /> -->
+					<ListingCard {item} />
+
+
+
 				{/each}
 			</div>
 

@@ -19,9 +19,9 @@ function detailsObject(details) {
     return details instanceof Map ? Object.fromEntries(details) : details || {};
 }
 
-function categoryIdFromSlug(slug) {
+async function categoryIdFromSlug(slug) {
     if (!slug) return null;
-    const category = Category.findOne({ slug }).select("_id");
+    const category = await Category.findOne({ slug }).select("_id");
     if (!category) throw new HttpError(404, "Category not found");
     return category._id;
 }
@@ -41,11 +41,6 @@ function typeFilter(attribute, raw, operation) {
 }
 
 exports.list = asyncHandler(async (req, res) => {
-    // const query = {};
-    // if (req.query.category)
-    //     query.category = await categoryIdFromSlug(req.query.category);
-    // if (req.query.status) query.status = req.query.status;
-    // if (req.query.isActive) query.isActive = req.query.isActive === "true";
 
     const query = {};
 
@@ -112,9 +107,9 @@ exports.list = asyncHandler(async (req, res) => {
 
     console.log(query, limit, page);
 
-    const result = await PMV.find({});
+    // const result = await PMV.find({});
 
-    console.log(result);
+    // console.log(result);
 
     const [items, total] = await Promise.all([
         PMV.find(query)
@@ -163,7 +158,7 @@ exports.create = asyncHandler(async (req, res) => {
     }
 
     if (files.length) {
-        body.images = body.images = { coverKey: "uploading", gallery: [] };
+        body.images = { coverKey: "uploading", gallery: [] };
     }
 
     const payload = validate(pmvCreateSchema, body);
@@ -177,10 +172,8 @@ exports.create = asyncHandler(async (req, res) => {
     try {
         if (files.length) {
             
-            const uploads = await Promise.all(
+            const uploads = await Promise.all(                
                 files.map(file => uploadToS3(file, "pmvs")));
-
-           
 
             uploaded = uploads;
 
@@ -190,8 +183,6 @@ exports.create = asyncHandler(async (req, res) => {
             }
 
         }
-
-
 
         const pmv = await PMV.create(payload);
         return res.status(201).json(await PMV.findById(pmv.id).populate("category"));

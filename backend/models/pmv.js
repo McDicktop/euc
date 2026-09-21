@@ -26,7 +26,7 @@ const PMVSchema = new mongoose.Schema(
         },
         defaultPricePerDay: { type: Number, min: 1, max: 30000 },
         deposit: { type: Number, min: 0, max: 500000 },
-        isActive: { type: Boolean, default: false },
+        isActive: { type: Boolean, default: true },
         images: {
             coverKey: { type: String, required: true },
             gallery: { type: [String], default: [] },

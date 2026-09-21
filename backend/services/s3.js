@@ -28,6 +28,9 @@ const uploadToS3 = async(file, folder = "uploads") => {
     
     const key = `${folder.replace(/^\/+|\/+$/g, "")}/${v4()}${ext}`;
 
+    // /папка и папка/jd92i9di29i9d299id29i.png
+    // /api/media/%02%20.../jd92i9di29i9d299id29i.png
+
     await s3.send(
         new PutObjectCommand({
             Bucket: BUCKET,
