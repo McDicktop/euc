@@ -1,8 +1,11 @@
 <script>
 	import { onMount } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import { goto } from '$app/navigation';
+
 	import { api } from '$lib/api';
 	import ListingCard from '$lib/components/ListingCard.svelte';
+	import ListingForm from '$lib/components/ListingForm.svelte';
 
 	let categories = [];
 	let listings = [];
@@ -21,8 +24,8 @@
 		try {
 			const query = new SvelteURLSearchParams({
 				page: String(page),
-				limit: "14",
-				isActive: "true"
+				limit: '14',
+				isActive: 'true'
 			});
 
 			if (selectedCategory) query.set('category', selectedCategory);
@@ -79,7 +82,15 @@
 
 <main>
 	{#if showCreate}
-		<div></div>
+		<div class="mx-auto">
+			<ListingForm
+				{categories}
+				onCreate={created}
+				onCancel={() => {
+					showCreate = false;
+				}}
+			/>
+		</div>
 	{/if}
 
 	<section>
@@ -122,7 +133,7 @@
 						class:bg-gray-50={selectedCategory !== item.slug}
 						class:text-gray-800={selectedCategory !== item.slug}
 						on:click={() => {
-							console.log(item.slug)
+							console.log(item.slug);
 							selectedCategory = item.slug;
 							load(1);
 						}}
@@ -148,10 +159,9 @@
 		{:else if listings.length}
 			<div class="grid grid-cols-3 gap-6">
 				{#each listings as item (item._id)}
-					<ListingCard {item} />
-
-
-
+					<button class="cursor-pointer" on:click={() => goto(`/${item._id}`)}>
+						<ListingCard {item} />
+					</button>
 				{/each}
 			</div>
 
@@ -190,8 +200,7 @@
 	<a href="/admin" class="text-sm font-medium">Управление каталогом</a>
 </footer>
 
-
-{#if notice} 
+{#if notice}
 	<div class="fixed right-6 top-6 z-30 rounded-lg bg-green-600 px-5 py-2 text-white shadow-2xl">
 		{notice}
 	</div>
