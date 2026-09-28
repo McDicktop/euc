@@ -20,6 +20,14 @@ export function mediaUrl(key) {
 
 }
 
+export function json(method, body) {
+	return {
+		method,
+		headers: {"Content-Type": "application/json"},
+		body: JSON.stringify(body)
+	}
+}
+
 
 // https://domain.com/api/media/image.png
 // s3://domina.org/bucket/folder/image.png

@@ -81,18 +81,7 @@
 				<!-- прочие details -->
 			</div>
 
-			<!-- <div clas="flex items-end justify-between border-t border-gray-100 pt-4">
-				<strong class="text-xl">
-					{formatMoney(item.defaultPricePerHour)} р
-					<small class="text-xs font-medium text-gray-700">/ час</small>
-				</strong>
 
-				{#if item.defaultPricePerDay}
-					<span class="text-xs font-medium text-gray-700">
-						{formatMoney(item.defaultPricePerDay)} р / день
-					</span>
-				{/if}
-			</div> -->
 		</div>
 	</article>
 </main>
