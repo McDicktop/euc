@@ -24,108 +24,132 @@
 	let submitting = false;
 	let error = '';
 
-    async function selectCategory(event) {
-        category = null;
-        details = {};
+	async function selectCategory(event) {
+		category = null;
+		details = {};
 
-        if(!form.category) return;
+		if (!form.category) return;
 
-        loadingCategory = true;
+		loadingCategory = true;
 
-        try {
-            category = await api(`/api/categories/slug/${form.category}`);
-        } catch(err) {
-            error = err.message;
-        } finally {
-            loadingCategory = false;
-        }
-    }
+		try {
+			category = await api(`/api/categories/slug/${form.category}`);
+		} catch (err) {
+			error = err.message;
+		} finally {
+			loadingCategory = false;
+		}
+	}
 
-    function updateFiles(event) {
-        files = Array.from(event.target.files || []);
+	function updateFiles(event) {
+		files = Array.from(event.target.files || []);
 
-        if(files.some((file) => file.size > 3 * 1024 * 1024)) {
-            error = "Каждое фото должно быть не больше 3 МБ"
-        } else {
-            error = "";
-        }
-    }
+		if (files.some((file) => file.size > 3 * 1024 * 1024)) {
+			error = 'Каждое фото должно быть не больше 3 МБ';
+		} else {
+			error = '';
+		}
+	}
 
-    function normalizeDetail(attr, value) {
-        if(attr.value === "number") {
-            return value === "" ? undefined : Number(value);
-        }
-        if(attr.value === "boolean") {
-            return Boolean(value);
-        }
-        if(attr.value === "multi_enum") {
-            return value || [];
-        }
+	// function normalizeDetail(attr, value) {
+	//     if(attr.value === "number") {
+	//         return value === "" ? undefined : Number(value);
+	//     }
+	//     if(attr.value === "boolean") {
+	//         return Boolean(value);
+	//     }
+	//     if(attr.value === "multi_enum") {
+	//         return value || [];
+	//     }
 
-        return value === "" ? undefined : value;
-    }
+	//     return value === "" ? undefined : value;
+	// }
+	function normalizeDetail(type, value) {
+		if (type === 'number') {
+			return value === '' ? undefined : Number(value);
+		}
+		if (type === 'boolean') {
+			return Boolean(value);
+		}
+		if (type === 'multi_enum') {
+			return value || [];
+		}
 
-    async function submit() {
-        error = "";
+		return value === '' ? undefined : value;
+	}
 
-        if(!files.length) {
-            error = "Добавьте хотя бы 1 файл";
-            return;
-        }
-        if(files.some((file) => file.size > 3 * 1024 * 1024)) return;
+	async function submit() {
 
-        submitting = true;
+		error = '';
 
-        try {
-            const payload = new FormData();
-            const slug = `listing-${Date.now().toString(36)}`;
-            payload.set('slug', slug);
-            payload.set('name', form.name);
-            payload.set('description', form.description);
-            payload.set('category', category._id);
-            payload.set('defaultPricePerHour', form.defaultPricePerHour);
-            if(form.defaultPricePerDay !== "") {
-                payload.set('defaultPricePerDay', form.defaultPricePerDay);
-            }
-            if(form.deposit !== "") {
-                payload.set('deposit', form.deposit);
-            }
-            
-            payload.set('serialNumber', form.serialNumber);
-            payload.set('mileage', form.mileage);
-            payload.set('isActive', "true");
-            payload.set('status', "available");
-            payload.set('userId', "6a5348463641d97dc24e72c3");
+		if (!files.length) {
+			error = 'Добавьте хотя бы 1 файл';
+			return;
+		}
+		if (files.some((file) => file.size > 3 * 1024 * 1024)) return;
 
-            const cleanDetails = {};
-            for( const item of categories.attributes || []) {
-                const attr = item.attribute;
-                const value = normalizeDetail(
-                    attribute,
-                    details[attr.key]
-                );
+		submitting = true;
 
-                if(value !== undefined) cleanDetails[attr.key] = value;
-            }
+		try {
+			const payload = new FormData();
+			const slug = `listing-${Date.now().toString(36)}`;
+			payload.set('slug', slug);
+			payload.set('name', form.name);
+			payload.set('description', form.description);
+			payload.set('category', category._id);
+			payload.set('defaultPricePerHour', form.defaultPricePerHour);
+			if (form.defaultPricePerDay !== '') {
+				payload.set('defaultPricePerDay', form.defaultPricePerDay);
+			}
+			if (form.deposit !== '') {
+				payload.set('deposit', form.deposit);
+			}
 
-            payload.set('details', JSON.stringify(cleanDetails));
+			payload.set('serialNumber', form.serialNumber);
+			payload.set('mileage', form.mileage);
+			payload.set('isActive', 'true');
+			payload.set('status', 'available');
+			payload.set('userId', '6a5348463641d97dc24e72c3');
 
-            files.forEach((file) => payload.append("images", file, file.name));
+			const cleanDetails = {};
+			for (const item of category.attributes || []) {
 
-            await api("/api/pmvs", {method: "POST", body: payload});
+				const type = item.attribute.type;
+				const key = item.attribute.key;
 
-            form = {...empty};
-            category = null;
-            details = {};
-            files = [];
-            await onCreated();
+				const value = normalizeDetail(type, details[key]);
 
-        } catch (e) {
-            error = e.message;
-        } finally {
-            submitting = false;
-        }
-    }
+		
+
+				// const attr = item.attribute;
+				// const value = normalizeDetail(
+				//     attribute,
+				//     details[attr.key]
+				// );
+
+				// if (value !== undefined) cleanDetails[attr.key] = value;
+				if (value !== undefined) cleanDetails[key] = value;
+			}	
+
+			payload.set('details', JSON.stringify(cleanDetails));
+
+			files.forEach((file) => payload.append('images', file, file.name));
+
+			const res = await api('/api/pmvs', { method: 'POST', body: payload });
+
+			console.log(res);
+
+			form = { ...empty };
+			category = null;
+			details = {};
+			files = [];
+			await onCreated();
+		} catch (e) {
+			error = e.message;
+		} finally {
+			submitting = false;
+		}
+	}
 </script>
 
 <div class="fixed inset-0 z-50 w-screen h-screen bg-gray-50/10 backdrop-blur-sm px-[5vw]">
@@ -143,9 +167,9 @@
 			class="grid size-10 shrink-0 absolute top-2 right-2 text-black font-bold rounded-full"
 			type="button"
 			onclick={async () => {
-                form = {...empty};
-                await onCancel();
-            }}
+				form = { ...empty };
+				await onCancel();
+			}}
 			aria-label="Закрыть"
 		>
 			X
@@ -268,37 +292,42 @@
 				</div>
 			{/if}
 
-            <!-- Фотки  -->
+			<!-- Фотки  -->
 
-            <label class="mt-8 flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2">
-                <input type="file" multiple accept="image/png,image/webp,image/jpeg" onchange={updateFiles}>
-                <strong>{files.length ? `Выбрано фото: ${files.length}` : "Добавьте фотографии"}</strong>
-                <small>JPEG, PNG или WEBP / до 5 файлов / не более 3 МБ каждый</small>
-            </label>
+			<label class="mt-8 flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2">
+				<input
+					type="file"
+					multiple
+					accept="image/png,image/webp,image/jpeg"
+					onchange={updateFiles}
+				/>
+				<strong>{files.length ? `Выбрано фото: ${files.length}` : 'Добавьте фотографии'}</strong>
+				<small>JPEG, PNG или WEBP / до 5 файлов / не более 3 МБ каждый</small>
+			</label>
 
-            <!-- Отправка или ошибка  -->
+			<!-- Отправка или ошибка  -->
 
-            {#if error}
-                <div class="my-5 rounded-xl border border-red-500 bg-red-500 text-white"></div>
-            {/if}
+			{#if error}
+				<div class="my-5 rounded-xl border border-red-500 bg-red-500 text-white">{error}</div>
+			{/if}
 
-            <div class="mt-7 flex justify-end gap-2.5">
-                <button 
-                    class="inline-flex min-h-10 items-center rounded-xl border border-gray-100 bg-white px-5 font-bold text-gray-900"
-                    onclick={onCancel}
-                    type="button"
-                >
-                    Отмена
-                </button>
+			<div class="mt-7 flex justify-end gap-2.5">
+				<button
+					class="inline-flex min-h-10 items-center rounded-xl border border-gray-100 bg-white px-5 font-bold text-gray-900"
+					onclick={onCancel}
+					type="button"
+				>
+					Отмена
+				</button>
 
-                <button 
-                    class="inline-flex min-h-10 items-center rounded-xl bg-gray-800 text-white px-5 font-bold disabled:cursor-not-allowed disabled:opacity-55"
-                    type="submit"
-                    disabled={submitting || !category}
-                >
-                    {submitting ? "Создаем..." : "Опубликовать объявление"}
-                </button>
-            </div>
+				<button
+					class="inline-flex min-h-10 items-center rounded-xl bg-gray-800 text-white px-5 font-bold disabled:cursor-not-allowed disabled:opacity-55"
+					type="submit"
+					disabled={submitting || !category}
+				>
+					{submitting ? 'Создаем...' : 'Опубликовать объявление'}
+				</button>
+			</div>
 		</form>
 	</div>
 </div>

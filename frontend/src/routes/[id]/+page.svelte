@@ -11,10 +11,12 @@
 	let pmv = {};
 	let error = '';
 	let imageFailed = false;
+	let activeImg = null;
 
 	onMount(async () => {
 		try {
 			pmv = await api(`http://localhost:3000/api/pmvs/${id}`);
+			activeImg = pmv?.images?.coverKey || pmv?.images?.gallery[0] || null;
 			console.log(pmv);
 		} catch (e) {
 			error = e.message;
@@ -25,63 +27,76 @@
 </script>
 
 <main>
-	<article
-		class="overflow-hidden rounded-xl border border-line bg-paper transition duration-200 hover:scale-105"
-	>
-		<div class="relative h-64 overflow-hidden">
-			{#if pmv.images?.coverKey && !imageFailed}
-				<img
-					class="size-full object-cover"
-					src={mediaUrl(pmv.images.coverKey)}
-					alt={pmv.name}
-					onerror={() => (imageFailed = true)}
-				/>
-			{:else}
-				<div class="size-full bg-gray-100">Фото нет</div>
-			{/if}
+	<h3 class="my-2 font-medium text-lg">
+		{pmv.name}
+	</h3>
 
-			<span
-				class="absolute top-4 left-4 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-black"
-			>
-				<!-- {statusLabels[pmv.status] || pmv.status} -->
-			</span>
-		</div>
+<article class="grid grid-cols-[80px_458px_458px] w-[1046px] gap-6 mx-auto justify-start"> 
+  <!-- 1 Фракция: Галерея миниатюр (самая узкая) -->
+  {#if pmv.images?.gallery?.length} 
+    <div class="flex flex-col gap-3"> 
+      {#each [pmv.images.coverKey, ...pmv.images.gallery] as thumb, ind} 
+        <button 
+          onclick={() => (activeImg = thumb)} 
+          class={`cursor-pointer border rounded-lg duration-200 ${activeImg === thumb ? 'border-gray-800' : 'border-gray-200 hover:opacity-80'}`} 
+        > 
+          <img class="size-20 object-contain" src={mediaUrl(thumb)} alt={`img_${ind}`} onerror={() => (imageFailed = true)} /> 
+        </button> 
+      {/each} 
+    </div> 
+  {:else} 
+    <div class="w-20 h-full bg-gray-100 flex items-center justify-center text-xs text-gray-400 rounded-lg">Фото нет</div> 
+  {/if} 
 
-		<div class="p-6">
-			<div class="text-xs font-bold tracking-[0.16em] uppercase">
-				{pmv.category?.name || 'Транспорт'}
-			</div>
-			<h3 class="my-2 font-medium text-lg tracking-[-0.04em]">
-				{pmv.name}
-			</h3>
-			<p class="line-clamp-2 h-10 text-sm leading-relaxed text-gray-800">
-				{pmv.description || 'Описание пока не добавлено'}
-			</p>
+  <!-- 2 Фракция: Основное изображение -->
+  {#if pmv.images?.coverKey && !imageFailed} 
+    <img class="w-full object-contain aspect-square border border-gray-200 rounded-xl" src={mediaUrl(activeImg)} alt={'image'} onerror={() => (imageFailed = true)} /> 
+  {:else} 
+    <div class="w-full aspect-video bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200 rounded-xl">Фото нет</div> 
+  {/if} 
 
-			<div class="my-4 flex flex-wrap gap-1.5">
-				<!-- details -->
-				{#if pmv.details?.brand}
-					<span class="rounded-lg border border-gray-100 bg-gray-100 px-2 py-1 text-xs">
-						{pmv.details?.brand}
-					</span>
-				{/if}
+  <!-- 3 Фракция: Описание и детали -->
+  <div class="flex flex-col gap-4"> 
+    <div> 
+      <div class="text-sm text-gray-500 uppercase tracking-wider"> 
+        {pmv.category?.name || 'Транспорт'} 
+      </div> 
+      <h3 class="text-2xl font-bold text-gray-900 mt-1"> 
+        {pmv.name} 
+      </h3> 
+    </div>
 
-				{#if pmv.details?.maxSpeed}
-					<span class="rounded-lg border border-gray-100 bg-gray-100 px-2 py-1 text-xs">
-						{pmv.details?.maxSpeed}
-					</span>
-				{/if}
+    <p class="text-gray-600 leading-relaxed"> 
+      {pmv.description || 'Описание пока не добавлено'} 
+    </p> 
 
-				{#if pmv.mileage !== null}
-					<span class="rounded-lg border border-gray-100 bg-gray-100 px-2 py-1 text-xs">
-						{pmv.mileage}
-					</span>
-				{/if}
+    <div class="flex flex-wrap gap-2 pt-2"> 
+      <!-- details --> 
+      {#if pmv.details?.brand} 
+        <span class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"> 
+          {pmv.details?.brand} 
+        </span> 
+      {/if} 
+      {#if pmv.details?.maxSpeed} 
+        <span class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"> 
+          {pmv.details?.maxSpeed} км/ч 
+        </span> 
+      {/if} 
+      {#if pmv.mileage !== null} 
+        <span class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"> 
+          Пробег - {pmv.mileage} км 
+        </span> 
+      {/if} 
+	  <button
+	   class="w-full py-2 rounded-xl border border-gray-300"
+		onclick={()=>{}}
+	  >
+	АРЕНДОВАТЬ
+	  </button>
+    </div> 
+  </div> 
+</article>
 
-				<!-- прочие details -->
-			</div>
 
 
-		</div>
-	</article>
 </main>
