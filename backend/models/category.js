@@ -15,6 +15,14 @@ const CategoryAttributeSchema = new mongoose.Schema(
     { _id: false },
 ); // почему ??
 
+
+// Attribute Power (0;100)
+
+// CategoryAttributeSchema 
+
+// Category Scooter - Power (0;200)
+// Category E Scooter - Power (0;500)
+
 const CategorySchema = new mongoose.Schema(
     {
         slug: {
