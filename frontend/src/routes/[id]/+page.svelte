@@ -15,8 +15,6 @@
 		Shield,
 		Wallet,
 		MapPin,
-		CircleUser,
-
 		UserCircle
 
 	} from '@lucide/svelte';
@@ -36,24 +34,29 @@
 		voltage: { component: Plug, color: 'brown' },
 		weight: { component: Weight, color: 'blue' },
 		maxSpeed: { component: Gauge, color: 'red' },
-		tireDiameter: { component: Diameter, color: 'purple' }
+		wheel: { component: Diameter, color: 'purple' }
 	};
+
+	async function showUserPMVs(id) {
+		const pmvs = await api(`http://localhost:3000/api/pmvs/user/${id}`);
+
+		console.log(pmvs)
+	}
 
 	onMount(async () => {
 		try {
 			pmv = await api(`http://localhost:3000/api/pmvs/${id}`);
-			attributes = await api(`http://localhost:3000/api/attributes`);
+			attributes = await api(`http://localhost:3000/api/attributes`);			
 			activeImg = pmv?.images?.coverKey || pmv?.images?.gallery[0] || null;
-
-			console.log(activeImg);
-			// console.log(pmv);
-			console.log(attributes);
 		} catch (e) {
 			error = e.message;
 		}
 
 		// await load();
 	});
+
+
+
 </script>
 
 <main>
@@ -88,9 +91,9 @@
 
 		{#if pmv.images?.coverKey && !imageFailed}
 			<img
-				class="w-full object-contain aspect-square border border-gray-200 rounded-xl"
+				class="w-full object-cover aspect-square border border-gray-200 rounded-xl"
 				src={mediaUrl(activeImg)}
-				alt={'image'}
+				alt='imgBig'
 			/>
 		{:else}
 			<div
@@ -100,17 +103,13 @@
 			</div>
 		{/if}
 
-		<div class="flex flex-col gap-4 border">
+		<div class="flex flex-col gap-4">
 			<p class="text-gray-600 leading-relaxed">
 				{pmv.description || 'Описание пока не добавлено'}
 			</p>
 
 			<div class="flex justify-between">
-				<!-- {#if pmv.mileage !== null}
-					<span class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full w-fit">
-						Пробег - {pmv.mileage} Km
-					</span>
-				{/if} -->
+
 				<div class="flex flex-col items-center rounded-xl w-24 py-1 bg-gray-200">
 					<Shield class="size-6" />
 					<span class="font-semibold">Залог:</span>
@@ -147,18 +146,20 @@
 					{/if}
 				</div>
 
-				<div class="flex flex-col items-center rounded-xl w-24 py-1 bg-gray-200">
+
+				<button 
+				class="border rounded-xl cursor-pointer flex flex-col items-center justify-center"
+				onclick={ () => showUserPMVs(pmv.userId) }
+				>
 					<UserCircle class="size-6" />
-					<span class="font-semibold">Владелец:</span>
-					{#if pmv.deposit !== null}
-						<span class="text-sm">
-							{pmv.deposit} ₽
-						</span>
-					{/if}
-				</div>
+					Все объявления пользователя
+				</button>
+
+
+
 			</div>
 
-			<div class="flex flex-col flex-wrap gap-2 pt-2 border">
+			<div class="flex flex-col flex-wrap gap-2 pt-2">
 				<span class="font-semibold">Характеристики:</span>
 				{#if pmv.details && attributes.length}
 					{#each Object.entries(pmv.details) as [key, value]}

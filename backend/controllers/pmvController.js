@@ -1,5 +1,7 @@
 const PMV = require("../models/pmv");
 const Category = require("../models/category");
+const User = require("../models/user");
+const mongoose = require("mongoose");
 
 const {
     pmvCreateSchema,
@@ -31,8 +33,8 @@ function typeFilter(attribute, raw, operation) {
         attribute.type === "number"
             ? Number(raw)
             : attribute.type === "boolean"
-                ? "raw" === "true"
-                : raw;
+              ? "raw" === "true"
+              : raw;
     if (attribute.type === "number" && Number.isNaN(value))
         throw new HttpError(422, `Filter ${attribute.key} must be numeric`);
     if (operation) return { [operation]: value };
@@ -41,7 +43,6 @@ function typeFilter(attribute, raw, operation) {
 }
 
 exports.list = asyncHandler(async (req, res) => {
-
     const query = {};
 
     if (req.query.category)
@@ -134,6 +135,24 @@ exports.get = asyncHandler(async (req, res) => {
     res.json(pmv);
 });
 
+exports.getByUserId = asyncHandler(async (req, res) => {
+    const id = req.params.id;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        throw new HttpError(404, "User ID is invalid");
+    }
+
+    const user = await User.findById(id);
+
+    if (!user) {
+        throw new HttpError(404, "User not found");
+    }
+
+    const pmvs = await PMV.find({userId: id});
+
+    res.json(pmvs);
+});
+
 exports.create = asyncHandler(async (req, res) => {
     // const payload = validate(pmvCreateSchema, req.body);
     // payload.details = await validateDetails(payload.category, payload.details);
@@ -167,28 +186,29 @@ exports.create = asyncHandler(async (req, res) => {
 
     let uploaded;
 
-
-
     try {
         if (files.length) {
-            
-            const uploads = await Promise.all(                
-                files.map(file => uploadToS3(file, "pmvs")));
+            const uploads = await Promise.all(
+                files.map((file) => uploadToS3(file, "pmvs")),
+            );
 
             uploaded = uploads;
 
             payload.images = {
                 coverKey: uploads[0].key,
-                gallery: uploads.slice(1).map(({ key }) => key)
-            }
-
+                gallery: uploads.slice(1).map(({ key }) => key),
+            };
         }
 
         const pmv = await PMV.create(payload);
-        return res.status(201).json(await PMV.findById(pmv.id).populate("category"));
+        return res
+            .status(201)
+            .json(await PMV.findById(pmv.id).populate("category"));
     } catch (error) {
         if (uploaded.length) {
-            await Promise.all(uploaded.map(({ key }) => deleteFromS3(key).catch(() => { })));
+            await Promise.all(
+                uploaded.map(({ key }) => deleteFromS3(key).catch(() => {})),
+            );
             throw error;
         }
     }
@@ -220,8 +240,13 @@ exports.delete = asyncHandler(async (req, res) => {
     const pmv = await PMV.findByIdAndDelete(req.params.id);
     if (!pmv) throw new HttpError(404, "PMV not found");
 
-    const imageKeys = [pmv.images?.coverKey, ...(pmv.images?.gallery || [])].filter(Boolean);
-    await Promise.all(imageKeys.map(key => deleteFromS3(key).catch((e) => { })));
+    const imageKeys = [
+        pmv.images?.coverKey,
+        ...(pmv.images?.gallery || []),
+    ].filter(Boolean);
+    await Promise.all(
+        imageKeys.map((key) => deleteFromS3(key).catch((e) => {})),
+    );
 
     res.status(204).end();
 });
