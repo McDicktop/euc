@@ -1,4 +1,9 @@
 <script>
+
+	import { auth } from '$lib/stores/auth';
+	import { logout, restoreSession } from '$lib/auth/auth';
+	
+	
 	import { onMount } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
@@ -52,6 +57,10 @@
 	onMount(async () => {
 		try {
 			categories = await api('http://localhost:3000/api/categories');
+
+			restoreSession();
+			console.log($auth.user)
+
 		} catch (e) {
 			error = e.message;
 		}

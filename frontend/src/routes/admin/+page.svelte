@@ -1,8 +1,4 @@
 <script>
-	// ListingAdmin
-	// CategoriesAdmin
-	// AttributesAdmin
-
 	import ListingsAdmin from '$lib/components/admin/ListingsAdmin.svelte';
 	import CategoriesAdmin from '$lib/components/admin/CategoriesAdmin.svelte';
 	import AttributesAdmin from '$lib/components/admin/AttributesAdmin.svelte';
@@ -10,6 +6,7 @@
 	import { Home } from '@lucide/svelte';
 
 	let section = 'listings';
+
 	const sections = [
 		['listings', 'Объявления'],
 		['categories', 'Категории'],
@@ -43,9 +40,7 @@
 		>
 			<div class="text-sm text-gray-800/90 mt-1">
 				Панель управления<span class="mx-1.5">·</span>
-				<span 
-					class="text-lg font-medium"
-				>
+				<span class="text-lg font-medium">
 					{sections.find((el) => el[0] === section)?.[1]}
 				</span>
 			</div>
@@ -59,9 +54,9 @@
 			</a>
 		</header>
 
-		{#if section === "listing"}
+		{#if section === 'listings'}
 			<ListingsAdmin />
-		{:else if section === "categories"}
+		{:else if section === 'categories'}
 			<CategoriesAdmin />
 		{:else}
 			<AttributesAdmin />

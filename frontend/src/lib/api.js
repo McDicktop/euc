@@ -39,7 +39,7 @@ export const statusLabels = {
 	available: "Свободен",
 	rented: "Арендованный", 
 	lost: "Потерянный", 
-	maintenance: "В монте",
+	maintenance: "В ремонте",
 }
 
 export function formatMoney(value) {

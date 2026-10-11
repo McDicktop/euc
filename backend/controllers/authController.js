@@ -130,6 +130,8 @@ class AuthController {
         try {
             const { email, password } = req.body || {};
 
+            console.log(email, password)
+
             if (typeof email !== "string" || typeof password !== "string") {
                 return sendError(
                     res,
