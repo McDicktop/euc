@@ -66,9 +66,8 @@
 
 		<button
 			type="submit"
-			// disabled={isSubmitting}
-			// class="border w-full mt-12 rounded-md bg-blue-500 text-white font-medium py-2.5 hover:bg-blue-500/75 disabled:opacity-60 disabled:cursor-default transition-colors"
-			class="border w-full mt-12 rounded-md !bg-black text-black font-medium py-2.5"
+			disabled={isSubmitting}
+			class="border w-full mt-12 rounded-md bg-blue-500 text-white font-medium py-2.5 hover:bg-blue-500/75 disabled:opacity-60 disabled:cursor-default transition-colors"
 		>
 			{isSubmitting ? 'Входим...' : 'Войти'}
 		</button>
