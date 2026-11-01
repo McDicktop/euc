@@ -44,9 +44,9 @@ const CategorySchema = new mongoose.Schema(
     { timestamps: true, versionKey: false },
 );
 
-// CategorySchema.pre("validate", function validateCategory(next) {
+
 CategorySchema.pre("validate", function validateCategory() {
-    const ids = this.attributes.map(({ attribute }) => String(attribute)); // ??????????
+    const ids = this.attributes.map(({ attribute }) => String(attribute));
 
     if (new Set(ids).size !== ids.length)
         this.invalidate("attributes", "an attribute may occur only once");
@@ -59,7 +59,6 @@ CategorySchema.pre("validate", function validateCategory() {
             break;
         }
     }
-    // next();
 });
 
 module.exports = mongoose.model("Category", CategorySchema);

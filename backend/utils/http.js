@@ -6,8 +6,6 @@ class HttpError extends Error {
     }
 }
 
-// const asyncHandler = (handler = (req, res, next) =>
-//     Promise.resolve(handler(req, res, next)).catch(next));
 const asyncHandler = (handler) => (req, res, next) =>
     Promise.resolve(handler(req, res, next)).catch(next);
 

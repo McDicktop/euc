@@ -7,9 +7,10 @@ let lastErrorMessage = null;
 
 const prefix = process.env.CACHE_PREFIX || "pmv";
 const ttl = {
+    attribute: positiveNumber(process.env.CACHE_ATTRIBUTE_TTL, 30 * 60),
     category: positiveNumber(process.env.CACHE_CATEGORY_TTL, 30 * 60),
     pmvList: positiveNumber(process.env.CACHE_PMV_LIST_TTL, 30),
-}
+};
 
 function positiveNumber(value, fallback) {
     const parsed = Number(value);
@@ -19,51 +20,74 @@ function positiveNumber(value, fallback) {
 function reportError(error) {
     const message = error?.message || String(error);
 
-    if(message === lastErrorMessage) return;
+    if (message === lastErrorMessage) return;
 
     lastErrorMessage = message;
     console.warn(`Redis unavailable, using DB directly: ${message}`);
 }
 
 async function connectRedis() {
-    if(!process.env.REDIS_URL) return false;
-    if(client?.isReady) return true;
-    if(connecting) return connecting;
+    if (!process.env.REDIS_URL) return false;
+    if (client?.isReady) return true;
+    if (connecting) return connecting;
 
     client = createClient({
         url: process.env.REDIS_URL,
-        disableOfflineQueue: true,
+        disableOfflineQueue: true, // еще раз напомни что это значит?
         socket: {
             connectionTimeout: 2000,
             reconnectStrategy(retries) {
-                return retries < 3 ? Math.min(200 * 2 ** retries, 1000) : false
-            }
-        }
-    })
+                return retries < 3 ? Math.min(200 * 2 ** retries, 1000) : false;
+            },
+        },
+    });
 
-    client.on("error", reportError)
+    client.on("error", reportError);
 
-    connecting = client.connect()
+    connecting = client
+        .connect() // магия
         .then(() => {
             lastErrorMessage = null;
-            console.log("Redis cache connected")
+            console.log("Redis cache connected");
             return true;
         })
         .catch((error) => {
+            console.log(error);
             reportError(error);
             return false;
         })
         .finally(() => {
             connecting = null;
-        })
+        });
 
     return connecting;
 }
 
-async function closeRedis() {
-    if(!client?.isOpen) return;
+//Работа connectRedis()
 
-    try{
+//При первом вызове connectRedis() строки 29-31 выполняются
+
+//Далее client = .... Создается конфигурация
+
+//Строка 44 вешаем слушатель события “error” на client ??
+
+//Далее присваиваем connection = client.connect() (который возвращает промис)
+//(если мы вызовем connectRedis() в этот момент, она завершится на 31 строке)
+
+//Что-то неведомое начинает происходить (подключение к редис) , затем выполнится либо then либо catch и затем  finally((() => {connecting =  null}) и connectRedis завершит работу (свой первый вызов) вернув connecting = null
+
+//При повторном вызове connectRedis() (если соединение уже есть)  она завершится на 30 строке (connecting = null, но client уже не промис, а результат выполнения асинхронных действий и уже существует client.isReady)
+
+// (При повторном вызове connectRedis() (если соединения еще нет, все как при первом вызове) )
+
+//А в результате асинхронных действий мы либо получим ошибку (не создадим магию соединения с редис, лишь выполним блок catch, finally и т.д.)
+//Либо выполним блок then в котором обнулим lastErrorMessage = null, напишем в консоль об успехе и просто вернем true (далее finally и т.д.)
+
+async function closeRedis() {
+    /// промис
+    if (!client?.isOpen) return;
+
+    try {
         await client.close();
     } catch {
         client.destroy();
@@ -75,15 +99,15 @@ function isReady() {
 }
 
 function key(value) {
-    return `${prefix}:${value}`
+    return `${prefix}:${value}`;
 }
 
 async function getJson(cacheKey) {
-    if(!isReady()) return null;
+    if (!isReady()) return null;
 
     try {
-        const value = await client.get(key(cacheKey))
-        return value == null ? null : JSON.parse(value)
+        const value = await client.get(key(cacheKey));
+        return value == null ? null : JSON.parse(value);
     } catch (error) {
         reportError(error);
         return null;
@@ -91,22 +115,33 @@ async function getJson(cacheKey) {
 }
 
 async function setJson(cacheKey, value, seconds) {
-    if(!isReady()) return false;
+    if (!isReady()) return false;
 
     try {
         await client.set(key(cacheKey), JSON.stringify(value), { EX: seconds });
-        return true
+        return true;
     } catch (error) {
         reportError(error);
         return false;
     }
 }
 
-async function remove(...cacheKeys) {
-    if(!isReady()) return false;
+async function remember(cacheKey, seconds, operation) {
+    const cached = await getJson(cacheKey);
 
-    const keys = cacheKeys.filter((el) => Boolean(el)).map(el => key(el));
-    if(!keys.length) return true;
+    if (cached !== null) return cached;
+
+    const value = await operation();
+
+    await setJson(cacheKey, value, seconds);
+    return value;
+}
+
+async function remove(...cacheKeys) {
+    if (!isReady()) return false;
+
+    const keys = cacheKeys.filter((el) => Boolean(el)).map((el) => key(el));
+    if (!keys.length) return true;
 
     try {
         await client.del(keys);
@@ -118,12 +153,45 @@ async function remove(...cacheKeys) {
 }
 
 async function removeByPrefix(cachePrefix) {
-    if(!isReady()) return false;
+    if (!isReady()) return false;
+
+    // pmv*
+    // 1000
+
+    // 0 "pmv:attributes:1" -> 10
+    // "pmv:attributes:list" -> 11
+    // ...
+    // 100 pmv:categories:list -> 11
+    // pmv:attributes:3 -> 12
+    // pmv:attributes:new -> 13
+    // car:category:1 -> 14
+    // car:category:2 -> 15
+    // car:category:3 -> 16
+
+    // pmv:
+
+    // 0
+    // 100
+
+    let cursor = 0;
 
     try {
-        for await (const keys of client.scanIterator({ MATCH: `${key(cachePrefix)}*`, COUNT: 100})) {
-            if (keys.length) await client.del(keys);
-        }
+        do {
+            const reply = await client.scan(cursor, {
+                MATCH: `${key(cachePrefix)}*`,
+                COUNT: 100,
+            });
+            cursor = reply.cursor;
+            if (reply.keys.length) await client.del(reply.keys);
+        } while (cursor !== 0);
+
+        // for await (const keys of client.scanIterator({
+        //     MATCH: `${key(cachePrefix)}*`,
+        //     COUNT: 100,
+        // })) {
+        //     // ???????????
+        //     if (keys.length) await client.del(keys);
+        // }
         return true;
     } catch (error) {
         reportError(error);
@@ -132,12 +200,13 @@ async function removeByPrefix(cachePrefix) {
 }
 
 module.exports = {
-    connectRedis, 
+    connectRedis,
     closeRedis,
     isReady,
     getJson,
-    setJson, 
-    remove, 
+    setJson,
+    remove,
     removeByPrefix,
     ttl,
-}
+    remember,
+};

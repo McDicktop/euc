@@ -106,7 +106,7 @@ exports.list = asyncHandler(async (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 10), 100);
     const page = Math.max(Number(req.query.page) || 1, 1);
 
-    console.log(query, limit, page);
+    // console.log(query, limit, page);
 
     // const result = await PMV.find({});
 

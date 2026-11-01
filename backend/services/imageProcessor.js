@@ -6,8 +6,6 @@ async function processImage(file) {
     if (!file || !file.buffer) throw new HttpError(422, "Image file is required");
     if (!IMAGES_TYPES.has(file.mimetype)) throw new HttpError(422, "ONLY PNG, WEBP, JPEG, HEIF, HEIC images are allowed");
 
-
-
     try {
         const buffer = await sharp(file.buffer, { limitInputPixels: 16e6 })
             .rotate()

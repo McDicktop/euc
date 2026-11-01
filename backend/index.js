@@ -16,7 +16,6 @@ const port = process.env.PORT || 8080;
 const db = process.env.DB_URL || "mongodb://localhost:27017/";
 const app = express();
 
-
 app.use(cors({
     origin: (origin, callback) => {
         const allowed = ["http://localhost:5173"];
@@ -53,12 +52,12 @@ const start = async () => {
 
         const shutdown = async () => {
             server.close();
-            await Promise.allSettled([closeRedis(), mongoose.disconnect()])
+            await Promise.allSettled([closeRedis(), mongoose.disconnect()]) // внутри allSetled промисы?
         }
 
         // process.on("SIGINT", (prc) => shutdown(prc))
         process.on("SIGINT", shutdown) // Ctrl + C
-        process.on("SIGTERM", shutdown) // Docket stop, kill <pid>
+        process.on("SIGTERM", shutdown) // Docker stop, kill <pid>
     } catch (e) {
         console.log(e);
     }

@@ -30,7 +30,7 @@ const AttributeSchema = new mongoose.Schema(
     { timestamps: true },
 );
 
-// AttributeSchema.pre("validate", function validateAttribute(next) {
+
 AttributeSchema.pre("validate", function validateAttribute() {
     const needsOptions = this.type === "enum" || this.type === "multi_enum";
 
@@ -49,44 +49,6 @@ AttributeSchema.pre("validate", function validateAttribute() {
     if (this.min !== null && this.max !== null && this.min > this.max) {
         this.invalidate("max", "max must be greater than or equal to min");
     }
-
-    // next();
 });
 
 module.exports = mongoose.model("Attribute", AttributeSchema);
-
-// const attributes = [
-//     {
-//         key: "pwr",
-//         label: "Power",
-//         type: "number",
-//         unit: "W",
-//         options: undefined,
-//         min: 0,
-//         max: 20000,
-//         filterable: false,
-//         deprecated: false,
-//     },
-//     {
-//         key: "capacity",
-//         label: "Capacity",
-//         type: "number",
-//         unit: "WH",
-//         options: undefined,
-//         min: 0,
-//         max: 200000,
-//         filterable: false,
-//         deprecated: false,
-//     },
-//     {
-//         key: "clr",
-//         label: "Color",
-//         type: "string",
-//         unit: null,
-//         options: ["White","Black","Red","Green","Yellow","","","","","","","","","","","",],
-//         min: null,
-//         max: null,
-//         filterable: false,
-//         deprecated: false,
-//     },
-// ];
