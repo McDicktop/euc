@@ -2,6 +2,8 @@ const Attribute = require("../models/attribute");
 const Category = require("../models/category");
 const cache = require("../services/cache");
 
+const {invalidateAllCategoryCaches} = require("../services/category-details")
+
 const { asyncHandler, HttpError } = require("../utils/http");
 const { attributeSchema, validate } = require("../validators/common");
 
@@ -23,7 +25,7 @@ exports.create = asyncHandler(async (req, res) => {
         validate(attributeSchema, req.body),
     );
     await cache.remove("attributes:list");
-    // await Promise.all([cache.remove("attributes:list"), invalidateAllCategoryCaches()])
+    await Promise.all([cache.remove("attributes:list"), invalidateAllCategoryCaches()])
     res.status(201).json(attribute);
 });
 
@@ -46,7 +48,7 @@ exports.update = asyncHandler(async (req, res) => {
     Object.assign(attribute, payload);
 
     await attribute.save();
-    // await Promise.all([cache.remove("attributes:list"), invalidateAllCategoryCaches()])
+    await Promise.all([cache.remove("attributes:list"), invalidateAllCategoryCaches()])
 
     res.json(attribute);
 });
@@ -67,7 +69,7 @@ exports.delete = asyncHandler(async (req, res) => {
     const attribute = await Attribute.findByIdAndDelete(req.params.id);
 
     if (!attribute) throw new HttpError(404, "Attribute not found");
-    // await Promise.all([cache.remove("attributes:list"), invalidateAllCategoryCaches()])
+    await Promise.all([cache.remove("attributes:list"), invalidateAllCategoryCaches()])
 
     res.status(204).end();
 });

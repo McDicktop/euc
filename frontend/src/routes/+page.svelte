@@ -1,12 +1,12 @@
 <script>
-
 	import { auth } from '$lib/stores/auth';
 	import { logout, restoreSession } from '$lib/auth/auth';
-	
-	
+
 	import { onMount } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
+
+	import { page } from '$app/stores';
 
 	import { api } from '$lib/api';
 	import ListingCard from '$lib/components/ListingCard.svelte';
@@ -22,18 +22,40 @@
 	let error = '';
 	let notice = '';
 
-	async function load(page = 1) {
+	async function load(pageArg = 1) {
 		loading = true;
 		error = '';
 
-		try {
-			const query = new SvelteURLSearchParams({
-				page: String(page),
-				limit: '14',
-				isActive: 'true'
-			});
+		const searchParams = $page.url.searchParams;
 
-			if (selectedCategory) query.set('category', selectedCategory);
+		let urlParamsObject = {};
+		try {
+			urlParamsObject = Object.fromEntries(searchParams);
+		} catch (parseError) {
+			console.warn('Не удалось распарсить параметры URL:', parseError);
+		}
+		console.log(urlParamsObject);
+
+		// НУЖНО ПРОВЕРИТЬ urlParamsObject
+
+		urlParamsObject.page = String(pageArg);
+		urlParamsObject.limit = '14';
+		urlParamsObject.isActive = true;
+
+		if (selectedCategory) {
+			urlParamsObject.category = selectedCategory;
+		}
+
+		try {
+			// const query = new SvelteURLSearchParams({
+			// 	page: String(pageArg),
+			// 	limit: '14',
+			// 	isActive: 'true'
+			// });
+
+			const query = new SvelteURLSearchParams(urlParamsObject);
+
+			// if (selectedCategory) query.set('category', selectedCategory);
 
 			const data = await api(`http://localhost:3000/api/pmvs?${query}`);
 			listings = data.items;
@@ -59,8 +81,7 @@
 			categories = await api('http://localhost:3000/api/categories');
 
 			restoreSession();
-			console.log($auth.user)
-
+			console.log('USER', $auth.user);
 		} catch (e) {
 			error = e.message;
 		}
@@ -142,7 +163,6 @@
 						class:bg-gray-50={selectedCategory !== item.slug}
 						class:text-gray-800={selectedCategory !== item.slug}
 						on:click={() => {
-							console.log(item.slug);
 							selectedCategory = item.slug;
 							load(1);
 						}}

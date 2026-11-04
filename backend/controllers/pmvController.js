@@ -3,6 +3,12 @@ const Category = require("../models/category");
 const User = require("../models/user");
 const mongoose = require("mongoose");
 
+const cache = require("../services/cache");
+
+async function invalidatePmvsListCache() {
+    await cache.removeByPrefix("pmvs:list:");
+}
+
 const {
     pmvCreateSchema,
     pmvUpdateSchema,
@@ -43,6 +49,7 @@ function typeFilter(attribute, raw, operation) {
 }
 
 exports.list = asyncHandler(async (req, res) => {
+
     const query = {};
 
     if (req.query.category)
@@ -70,10 +77,23 @@ exports.list = asyncHandler(async (req, res) => {
             ]),
         );
 
+        // console.log('byKey = ', byKey)
+        console.log(attributeFilters)
         for (const [key, raw] of attributeFilters) {
+            console.log(key)
+            console.log(raw)
             // attr.key.operator
             const [, attributeKey, operator] = key.split(".");
+
+            console.log(attributeKey)
+            console.log(operator)
+
+
+
+
             const attribute = byKey[attributeKey];
+
+            // console.log(attribute)
 
             if (!attribute || !attribute.filterable)
                 throw new HttpError(
@@ -112,21 +132,44 @@ exports.list = asyncHandler(async (req, res) => {
 
     // console.log(result);
 
-    const [items, total] = await Promise.all([
-        PMV.find(query)
-            .populate("category")
-            .sort({
-                createdAt: -1,
-            })
-            .skip((page - 1) * limit)
-            .limit(limit),
-        PMV.countDocuments(query),
-    ]);
+    // const [items, total] = await Promise.all([
+    //     PMV.find(query)
+    //         .populate("category")
+    //         .sort({
+    //             createdAt: -1,
+    //         })
+    //         .lean()
+    //         .skip((page - 1) * limit)
+    //         .limit(limit),
+    //     PMV.countDocuments(query),
+    // ]);
 
-    res.json({
-        items,
-        pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-    });
+    // console.log(req.query)
+
+    const result = await cache.remember(
+        cache.queryKey("pmvs:list", req.query),
+        cache.ttl.pmvList,
+        async () => {
+            const [items, total] = await Promise.all([
+                PMV.find(query)
+                    .populate("category")
+                    .sort({
+                        createdAt: -1,
+                    })
+                    .lean()
+                    .skip((page - 1) * limit)
+                    .limit(limit),
+                PMV.countDocuments(query),
+            ]);
+
+            return {
+                items,
+                pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+            }
+        },
+    );
+
+    res.json(result);
 });
 
 exports.get = asyncHandler(async (req, res) => {
@@ -148,7 +191,7 @@ exports.getByUserId = asyncHandler(async (req, res) => {
         throw new HttpError(404, "User not found");
     }
 
-    const pmvs = await PMV.find({userId: id});
+    const pmvs = await PMV.find({ userId: id });
 
     res.json(pmvs);
 });
@@ -201,6 +244,7 @@ exports.create = asyncHandler(async (req, res) => {
         }
 
         const pmv = await PMV.create(payload);
+        await invalidatePmvsListCache();
         return res
             .status(201)
             .json(await PMV.findById(pmv.id).populate("category"));
@@ -232,7 +276,7 @@ exports.update = asyncHandler(async (req, res) => {
     Object.assign(pmv, payload);
 
     await pmv.save();
-
+    await invalidatePmvsListCache();
     res.json(await PMV.findById(pmv.id).populate("category"));
 });
 
@@ -248,5 +292,6 @@ exports.delete = asyncHandler(async (req, res) => {
         imageKeys.map((key) => deleteFromS3(key).catch((e) => {})),
     );
 
+    await invalidatePmvsListCache();
     res.status(204).end();
 });

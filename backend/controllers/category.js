@@ -8,7 +8,13 @@ const Attribute = require("../models/attribute");
 const PMV = require("../models/pmv");
 
 const { categorySchema, validate } = require("../validators/common");
-const { getCategoryWithAttributes } = require("../services/category-details");
+const {
+    getCategoryWithAttributes,
+    getCategoryWithAttributesBySlug,
+    invalidateCategoryCache,
+} = require("../services/category-details");
+
+const cache = require("../services/cache");
 
 const { makeSlug } = require("../utils/slug");
 const { HttpError, asyncHandler } = require("../utils/http");
@@ -25,7 +31,17 @@ exports.list = asyncHandler(async (req, res) => {
     // const categories = (
     //     await Category.find().select("slug name parent isActive attributes")
     // ).sort({ name: 1 });
-    const categories = await Category.find().select("slug name parent isActive attributes");
+
+    const categories = await cache.remember(
+        "categories:list",
+        cache.ttl.category,
+        () =>
+            Category.find()
+                .select("slug name parent isActive attributes")
+                .sort({ name: 1 })
+                .lean(),
+    );
+
     res.json(categories);
 });
 
@@ -35,10 +51,7 @@ exports.get = asyncHandler(async (req, res) => {
 });
 
 exports.getBySlug = asyncHandler(async (req, res) => {
-    const category = await Category.findOne({ slug: req.params.slug }).populate(
-        "attributes.attribute",
-    );
-    if (!category) throw new HttpError(404, "Category not found");
+    const category = await getCategoryWithAttributesBySlug(req.params.slug);
     res.json(category);
 });
 
@@ -51,6 +64,9 @@ exports.create = asyncHandler(async (req, res) => {
     await assertAttributesExist(payload.attributes);
 
     const category = await Category.create(payload);
+
+    await invalidateCategoryCache({ id: category.id, slug: [category.slug] });
+
     res.status(201).json(await getCategoryWithAttributes(category.id));
 });
 
@@ -58,6 +74,7 @@ exports.update = asyncHandler(async (req, res) => {
     const category = await Category.findById(req.params.id);
     if (!category) throw new HttpError(404, "category not found");
 
+    const oldSlug = category.slug;
     const payload = validate(categorySchema, {
         ...category.toObject(),
         ...req.body,
@@ -67,6 +84,11 @@ exports.update = asyncHandler(async (req, res) => {
     await assertAttributesExist(payload.attributes);
     Object.assign(category, payload);
     await category.save();
+
+    await invalidateCategoryCache({
+        id: category.id,
+        slug: [oldSlug, category.slug],
+    });
 
     res.status(200).json(await getCategoryWithAttributes(category.id));
 });
@@ -90,6 +112,8 @@ exports.delete = asyncHandler(async (req, res) => {
     if (!category) {
         throw new HttpError(404, "Category not found");
     }
+
+    await invalidateCategoryCache({ id: category.id, slug: [category.slug] });
 
     res.status(201).end();
 });

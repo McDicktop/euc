@@ -102,6 +102,24 @@ function key(value) {
     return `${prefix}:${value}`;
 }
 
+function queryKey(cachePrefix, query) {
+
+    // console.log(query)
+    // console.log(Object.entries(query))
+
+    const normalized = Object.entries(query)
+        .sort(([key_1], [key_2]) => key_1.localeCompare(key_2))
+        .map(([name, value]) => [name, Array.isArray(value) ? [...value].sort() : String(value)])
+    const hash = crypto.createHash("sha256").update(JSON.stringify(normalized)).digest("hex").slice(0, 32)
+    return `${cachePrefix}:${hash}`;
+}
+
+// {
+//     key: value
+// }
+
+// [[key, value]]
+
 async function getJson(cacheKey) {
     if (!isReady()) return null;
 
@@ -208,5 +226,6 @@ module.exports = {
     remove,
     removeByPrefix,
     ttl,
+    queryKey,
     remember,
 };
