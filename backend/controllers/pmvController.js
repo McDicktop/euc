@@ -49,7 +49,6 @@ function typeFilter(attribute, raw, operation) {
 }
 
 exports.list = asyncHandler(async (req, res) => {
-
     const query = {};
 
     if (req.query.category)
@@ -62,6 +61,7 @@ exports.list = asyncHandler(async (req, res) => {
     );
 
     // ....?category=....&attr.power. &attr.color.eql=черный
+    // console.log(attributeFilters);
 
     if (attributeFilters.length && !query.category)
         throw new HttpError(
@@ -70,6 +70,7 @@ exports.list = asyncHandler(async (req, res) => {
         );
     if (attributeFilters.length) {
         const category = await getCategoryWithAttributes(query.category);
+
         const byKey = new Map(
             category.attributes.map((item) => [
                 item.attribute.key,
@@ -77,23 +78,9 @@ exports.list = asyncHandler(async (req, res) => {
             ]),
         );
 
-        // console.log('byKey = ', byKey)
-        console.log(attributeFilters)
         for (const [key, raw] of attributeFilters) {
-            console.log(key)
-            console.log(raw)
-            // attr.key.operator
             const [, attributeKey, operator] = key.split(".");
-
-            console.log(attributeKey)
-            console.log(operator)
-
-
-
-
-            const attribute = byKey[attributeKey];
-
-            // console.log(attribute)
+            const attribute = byKey.get(attributeKey);
 
             if (!attribute || !attribute.filterable)
                 throw new HttpError(
@@ -164,8 +151,13 @@ exports.list = asyncHandler(async (req, res) => {
 
             return {
                 items,
-                pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-            }
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    pages: Math.ceil(total / limit),
+                },
+            };
         },
     );
 
