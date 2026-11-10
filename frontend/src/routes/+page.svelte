@@ -23,6 +23,7 @@
 	let notice = '';
 
 	let filters = [];
+	let filterQueryObj = {};
 
 	async function load(pageArg = 1) {
 		loading = true;
@@ -36,7 +37,7 @@
 		} catch (parseError) {
 			console.warn('Не удалось распарсить параметры URL:', parseError);
 		}
-		console.log(urlParamsObject);
+		// console.log(urlParamsObject);
 
 		// НУЖНО ПРОВЕРИТЬ urlParamsObject
 
@@ -49,16 +50,24 @@
 			const catByslug = await api(`http://localhost:3000/api/categories/slug/${selectedCategory}`);
 
 			filters = catByslug?.attributes
-				.map((attr) =>
-					attr.attribute.filterable
-						? {
-								label: attr.attribute.label,
-								key: attr.attribute.key,
-								min: attr.attribute.min || attr.min,
-								max: attr.attribute.max || attr.max
-							}
-						: false
-				)
+				.map((attr) => {
+					if (!attr.attribute.filterable) return false;
+
+					// Определяем эталонные значения из базы
+					const dbMin = attr.attribute.min || attr.min;
+					const dbMax = attr.attribute.max || attr.max;
+
+					return {
+						label: attr.attribute.label,
+						key: attr.attribute.key,
+						// Текущие значения в инпутах (изначально равны базовым)
+						min: dbMin,
+						max: dbMax,
+						// Жёсткие границы из базы для валидации
+						baseMin: dbMin,
+						baseMax: dbMax
+					};
+				})
 				.filter(Boolean);
 
 			console.log(filters);
@@ -93,6 +102,34 @@
 			notice = '';
 		}, 3000);
 	}
+
+	const updateFilterQuery = (filter) => {
+		
+		if (filter.min < filter.baseMin) {
+			filter.min = filter.baseMin;
+		} else if (filter.min > filter.baseMax) {
+			filter.min = filter.baseMax;
+		}
+
+	
+		if (filter.max > filter.baseMax) {
+			filter.max = filter.baseMax;
+		} else if (filter.max < filter.baseMin) {
+			filter.max = filter.baseMin;
+		}
+
+	
+		if (filter.min > filter.max) {			
+			filter.min = filter.baseMin;
+			filter.max = filter.baseMax;
+		}
+
+		// Триггерим реактивность в Svelte, чтобы инпуты визуально обновились при сбросе
+		filters = filters;
+
+	
+		filterQueryObj[filter.key] = { min: filter.min, max: filter.max };
+	};
 
 	onMount(async () => {
 		try {
@@ -148,48 +185,45 @@
 		</div>
 	</section>
 
-	
-
-<section class="flex flex-wrap gap-6">
-  {#each filters as filter (filter.label)}
-    <div class="flex flex-col gap-2 items-center px-2 py-1 border border-gray-300 rounded-xl">
-   
-      <span class="text-sm font-semibold text-gray-700">
-        {filter.label}
-      </span>
-      
-      <div class="flex items-center gap-2">
-        <label class="flex items-center gap-1.5 text-xs text-gray-500">
-          <span>min</span>
-          <input 
-            type="number" 
-            bind:value={filter.min} 
-            placeholder="Мин" 
-            class="w-20 rounded border border-gray-300 px-2 py-1 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
-        </label>
-        
-        
-        
-        <label class="flex items-center gap-1.5 text-xs text-gray-500">
-          <span>max</span>
-          <input 
-            type="number" 
-            bind:value={filter.max} 
-            placeholder="Макс" 
-            class="w-20 rounded border border-gray-300 px-2 py-1 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
-        </label>
-      </div>
-    </div>
-  {/each}
-</section>
-
-
-
-
-
 	<section class="mx-auto max-w-[1440px] px-[5vw] pt-24 pb-28">
+		<section class="flex flex-wrap gap-6">
+			{#each filters as filter (filter.label)}
+				<div class="flex flex-col gap-2 items-center px-2 py-1 border border-gray-300 rounded-xl">
+					<span class="text-sm font-semibold text-gray-700">
+						{filter.label}
+					</span>
+
+					<div class="flex items-center gap-2">
+						<label class="flex items-center gap-1.5 text-xs text-gray-500">
+							<span>min</span>
+							<input
+								type="number"
+								bind:value={filter.min}
+								min={filter.baseMin}
+								max={filter.baseMax}
+								placeholder="Мин"
+								class="w-20 rounded-lg border border-gray-300 px-1 py-1 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+								on:change={() => updateFilterQuery(filter)}
+							/>
+						</label>
+
+						<label class="flex items-center gap-1.5 text-xs text-gray-500">
+							<span>max</span>
+							<input
+								type="number"
+								bind:value={filter.max}
+								min={filter.baseMin}
+								max={filter.baseMax}
+								placeholder="Макс"
+								class="w-20 rounded-lg border border-gray-300 px-1 py-1 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+								on:change={() => updateFilterQuery(filter)}
+							/>
+						</label>
+					</div>
+				</div>
+			{/each}
+		</section>
+
 		<div class="mb-11 flex items-center justify-between gap-8">
 			<div class="">
 				<h2 class="text-base font-bold text-gray-800">Каталог</h2>
