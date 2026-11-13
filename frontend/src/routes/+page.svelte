@@ -35,7 +35,7 @@
 			if (!Object.keys(filterQueryObj).length) {
 				filters = catByslug?.attributes
 					.map((attr) => {
-						if (!attr.attribute.filterable) return false;
+						if (!attr.attribute.filterable || attr.attribute.type !== 'number') return false;
 
 						// Определяем min и max значения из базы
 						const dbMin = attr.attribute.min || attr.min;
@@ -44,10 +44,9 @@
 						return {
 							label: attr.attribute.label,
 							key: attr.attribute.key,
-							// Текущие значения в инпутах (изначально равны базовым)
+							unit: attr.attribute.unit,
 							min: dbMin,
 							max: dbMax,
-							// Жёсткие границы из базы для валидации
 							baseMin: dbMin,
 							baseMax: dbMax
 						};
@@ -66,8 +65,23 @@
 			if (selectedCategory) query.set('category', selectedCategory);
 
 			if (Object.keys(filterQueryObj).length) {
-				console.log(filterQueryObj);
-				// добавляем параметры фильтрации в query
+
+				for (const [key, value] of Object.entries(filterQueryObj)) {
+					if (value === null || value === undefined || value === '') continue;
+
+					// Если значение — объект диапазона { min, max }
+					if (typeof value === 'object' && !Array.isArray(value)) {
+						if (value.min !== undefined && value.min !== '') {
+							query.set(`attr.${key}.gte`, String(value.min));
+						}
+						if (value.max !== undefined && value.max !== '') {
+							query.set(`attr.${key}.lte`, String(value.max));
+						}
+					} else {
+						// Обычное значение (число, строка, булево)
+						query.set(`attr.${key}`, String(value));
+					}
+				}
 			}
 
 			const data = await api(`http://localhost:3000/api/pmvs?${query}`);
@@ -110,27 +124,19 @@
 		// Триггерим реактивность в Svelte, чтобы инпуты визуально обновились при сбросе
 		filters = filters;
 
-		
-		// Если после изменения инпута фильтра min и max совпадают или min === max
+		// Если после изменения инпута фильтра min и max совпадают
 		if (filter.min === filter.max) {
 			filterQueryObj[filter.key] = filter.min;
 			return;
 		}
-		
+
 		if (filter.min === filter.baseMin && filter.max === filter.baseMax) {
-			delete filterQueryObj[filter.key]
+			delete filterQueryObj[filter.key];
 			return;
 		}
-		
+
 		filterQueryObj[filter.key] = { min: filter.min, max: filter.max };
-
-
 	};
-
-	// const showFiltered = () => {
-	// 	console.log(filterQueryObj)
-
-	// }
 
 	onMount(async () => {
 		try {
@@ -192,7 +198,7 @@
 				{#each filters as filter (filter.label)}
 					<div class="flex flex-col gap-2 items-center px-2 py-1 border border-gray-300 rounded-xl">
 						<span class="text-sm font-semibold text-gray-700">
-							{filter.label}
+							{filter.label} ({filter.unit})
 						</span>
 
 						<div class="flex items-center gap-2">

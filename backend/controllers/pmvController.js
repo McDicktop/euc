@@ -39,8 +39,8 @@ function typeFilter(attribute, raw, operation) {
         attribute.type === "number"
             ? Number(raw)
             : attribute.type === "boolean"
-              ? "raw" === "true"
-              : raw;
+                ? "raw" === "true"
+                : raw;
     if (attribute.type === "number" && Number.isNaN(value))
         throw new HttpError(422, `Filter ${attribute.key} must be numeric`);
     if (operation) return { [operation]: value };
@@ -60,8 +60,6 @@ exports.list = asyncHandler(async (req, res) => {
         key.startsWith("attr."),
     );
 
-    // ....?category=....&attr.power. &attr.color.eql=черный
-    // console.log(attributeFilters);
 
     if (attributeFilters.length && !query.category)
         throw new HttpError(
@@ -102,11 +100,41 @@ exports.list = asyncHandler(async (req, res) => {
                     `Unknown filter operator: ${operator}`,
                 );
 
-            query[`details.${attributeKey}`] = typeFilter(
-                attribute,
-                raw,
-                mongoOperator,
-            );
+
+            const fieldKey = `details.${attributeKey}`;
+            const parsedFilter = typeFilter(attribute, raw, mongoOperator);
+
+            const isOperatorObj =
+                parsedFilter !== null &&
+                typeof parsedFilter === "object" &&
+                !Array.isArray(parsedFilter) &&
+                !(parsedFilter instanceof Date) &&
+                !(parsedFilter instanceof RegExp);
+
+            // Проверяем, записано ли уже по этому ключу такое же условие-объект
+            const isExistingOperatorObj =
+                query[fieldKey] !== null &&
+                typeof query[fieldKey] === "object" &&
+                !Array.isArray(query[fieldKey]) &&
+                !(query[fieldKey] instanceof Date) &&
+                !(query[fieldKey] instanceof RegExp);
+
+
+            if (isOperatorObj && isExistingOperatorObj) {
+                // Объединяем: { $gte: 10 } + { $lte: 10000 } => { $gte: 10, $lte: 10000 }
+                Object.assign(query[fieldKey], parsedFilter);
+            } else {
+                // Первая запись или точное совпадение (примитив / массив / RegExp)
+                query[fieldKey] = parsedFilter;
+            }
+
+
+
+            // query[`details.${attributeKey}`] = typeFilter(
+            //     attribute,
+            //     raw,
+            //     mongoOperator,
+            // );
         }
     }
 
@@ -243,7 +271,7 @@ exports.create = asyncHandler(async (req, res) => {
     } catch (error) {
         if (uploaded.length) {
             await Promise.all(
-                uploaded.map(({ key }) => deleteFromS3(key).catch(() => {})),
+                uploaded.map(({ key }) => deleteFromS3(key).catch(() => { })),
             );
             throw error;
         }
@@ -281,7 +309,7 @@ exports.delete = asyncHandler(async (req, res) => {
         ...(pmv.images?.gallery || []),
     ].filter(Boolean);
     await Promise.all(
-        imageKeys.map((key) => deleteFromS3(key).catch((e) => {})),
+        imageKeys.map((key) => deleteFromS3(key).catch((e) => { })),
     );
 
     await invalidatePmvsListCache();
