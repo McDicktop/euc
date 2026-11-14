@@ -250,7 +250,7 @@
 					</div>
 
 					{#each attributes.filter((a) => !a.deprecated) as attr (attr._id)}
-						<div class="flex min-h-14 items-center gap-3 border-tborder-gray-200 max-sm:flex-wrap max-sm:py-3">
+						<div class="border flex min-h-14 items-center gap-3 border-t border-gray-200 max-sm:flex-wrap max-sm:py-3">
 							<label class="mr-auto flex min-w-56 items-center gap-2.5">
 								<input 
 									type="checkbox" 

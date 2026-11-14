@@ -39,8 +39,8 @@ function typeFilter(attribute, raw, operation) {
         attribute.type === "number"
             ? Number(raw)
             : attribute.type === "boolean"
-                ? "raw" === "true"
-                : raw;
+              ? "raw" === "true"
+              : raw;
     if (attribute.type === "number" && Number.isNaN(value))
         throw new HttpError(422, `Filter ${attribute.key} must be numeric`);
     if (operation) return { [operation]: value };
@@ -105,7 +105,6 @@ exports.list = asyncHandler(async (req, res) => {
             //     mongoOperator,
             // );
 
-
             const fieldKey = `details.${attributeKey}`;
             const parsedFilter = typeFilter(attribute, raw, mongoOperator);
 
@@ -124,7 +123,6 @@ exports.list = asyncHandler(async (req, res) => {
                 !(query[fieldKey] instanceof Date) &&
                 !(query[fieldKey] instanceof RegExp);
 
-
             if (isOperatorObj && isExistingOperatorObj) {
                 // Объединяем: { $gte: 10 } + { $lte: 10000 } => { $gte: 10, $lte: 10000 }
                 Object.assign(query[fieldKey], parsedFilter);
@@ -132,32 +130,11 @@ exports.list = asyncHandler(async (req, res) => {
                 // Первая запись или точное совпадение (примитив / массив / RegExp)
                 query[fieldKey] = parsedFilter;
             }
-
         }
     }
 
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 10), 100);
     const page = Math.max(Number(req.query.page) || 1, 1);
-
-    // console.log(query, limit, page);
-
-    // const result = await PMV.find({});
-
-    // console.log(result);
-
-    // const [items, total] = await Promise.all([
-    //     PMV.find(query)
-    //         .populate("category")
-    //         .sort({
-    //             createdAt: -1,
-    //         })
-    //         .lean()
-    //         .skip((page - 1) * limit)
-    //         .limit(limit),
-    //     PMV.countDocuments(query),
-    // ]);
-
-    // console.log(req.query)
 
     const result = await cache.remember(
         cache.queryKey("pmvs:list", req.query),
@@ -269,7 +246,7 @@ exports.create = asyncHandler(async (req, res) => {
     } catch (error) {
         if (uploaded.length) {
             await Promise.all(
-                uploaded.map(({ key }) => deleteFromS3(key).catch(() => { })),
+                uploaded.map(({ key }) => deleteFromS3(key).catch(() => {})),
             );
             throw error;
         }
@@ -307,7 +284,7 @@ exports.delete = asyncHandler(async (req, res) => {
         ...(pmv.images?.gallery || []),
     ].filter(Boolean);
     await Promise.all(
-        imageKeys.map((key) => deleteFromS3(key).catch((e) => { })),
+        imageKeys.map((key) => deleteFromS3(key).catch((e) => {})),
     );
 
     await invalidatePmvsListCache();

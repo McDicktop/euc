@@ -26,30 +26,104 @@
 	let filterQueryObj = {};
 	let filterRanges = {};
 
+	async function load(pageArg = 1) {
+		loading = true;
+		error = '';
+
+		try {
+			const data = await api(`http://localhost:3000/api/pmvs?${buildQuery(pageArg)}`);
+			listings = data.items;
+			pagination = data.pagination;
+		} catch (err) {
+			error = err.message;
+		} finally {
+			loading = false;
+		}
+	}
+
 	async function loadFilters() {
+		if (!selectedCategory) return;
+
 		filters = [];
 		filterQueryObj = {};
 		filterRanges = {};
 
-		if(!selectedCategory) return;
-
 		try {
-			// код из load 
+			const categoryBySlug = await api(
+				`http://localhost:3000/api/categories/slug/${selectedCategory}`
+			);
+
+			filters = categoryBySlug.attributes
+				.filter((attr) => attr.attribute.filterable && attr.attribute.type === 'number')
+				.map((attr) => {
+					filterRanges[attr.attribute.key] = {
+						min: attr.attribute.min || attr.min,
+						max: attr.attribute.max || attr.max
+					};
+
+					return {
+						label: attr.attribute.label,
+						key: attr.attribute.key,
+						unit: attr.attribute.unit,
+						min: filterRanges[attr.attribute.key].min,
+						max: filterRanges[attr.attribute.key].max
+					};
+				});
 		} catch (err) {
 			error = err.message;
 		}
 	}
 
-	function buildQuery(args) {
+	function buildQuery(page) {
+		const query = new SvelteURLSearchParams({
+			page: String(page),
+			limit: '14',
+			isActive: 'true'
+		});
 
+		if (selectedCategory) query.set('category', selectedCategory);
+
+		if (Object.keys(filterQueryObj).length) {
+			for (const [key, value] of Object.entries(filterQueryObj)) {
+				if (value === null || value === undefined || value === '') continue;
+
+				// Если значение — объект диапазона { min, max }
+				if (typeof value === 'object' && !Array.isArray(value)) {
+					if (value.min !== undefined && value.min !== '') {
+						query.set(`attr.${key}.gte`, String(value.min));
+					}
+					if (value.max !== undefined && value.max !== '') {
+						query.set(`attr.${key}.lte`, String(value.max));
+					}
+				} else {
+					// Обычное значение (число, строка, булево)
+					query.set(`attr.${key}`, String(value));
+				}
+			}
+		}
+		return query;
 	}
 
-	async function applyFilters() {
+	async function applyFilter() {
+		if (!Object.keys(filterQueryObj).length) {
+			return;
+		}
 		await load(1);
 	}
 
+	const resetFilter = async () => {
+		for (const filter of filters) {
+			const initialRange = filterRanges[filter.key];
+			if (initialRange) {
+				Object.assign(filter, initialRange);
+			}
+		}
+		filterQueryObj = {};
+		filters = filters;
+		await load(1);
+	};
 
-	const updateFilterQuery = (filter) => {
+	const handleFilter = (filter) => {
 		if (filter.min < filterRanges[filter.key].min) {
 			filter.min = filterRanges[filter.key].min;
 		} else if (filter.min > filterRanges[filter.key].max) {
@@ -76,99 +150,16 @@
 			return;
 		}
 
-		if (filter.min === filterRanges[filter.key].min && filter.max === filterRanges[filter.key].max) {
+		if (
+			filter.min === filterRanges[filter.key].min &&
+			filter.max === filterRanges[filter.key].max
+		) {
 			delete filterQueryObj[filter.key];
 			return;
 		}
 
 		filterQueryObj[filter.key] = { min: filter.min, max: filter.max };
 	};
-
-	const resetFilter = () => {
-		console.log('reset')
-		
-	}
-
-	async function load(pageArg = 1) {
-		loading = true;
-		error = '';
-
-		if (selectedCategory) {
-			const catByslug = await api(`http://localhost:3000/api/categories/slug/${selectedCategory}`);
-
-			if (!Object.keys(filterQueryObj).length) {
-				filters = (catByslug?.attributes ?? [])
-					.map((attr) => {
-						if (!attr.attribute.filterable || attr.attribute.type !== 'number') return false;
-
-						// Определяем min и max значения из базы
-						// const dbMin = attr.attribute.min || attr.min;
-						// const dbMax = attr.attribute.max || attr.max;
-
-						filterRanges[attr.attribute.key] = {
-							min: attr.attribute.min || attr.min,
-							max: attr.attribute.max || attr.max
-						};
-						// console.log(filterRanges)
-
-						return {
-							label: attr.attribute.label,
-							key: attr.attribute.key,
-							unit: attr.attribute.unit,
-							min: filterRanges[attr.attribute.key].min,
-							max: filterRanges[attr.attribute.key].max,
-							
-							// min: dbMin,
-							// max: dbMax,
-							// baseMin: dbMin,
-							// baseMax: dbMax
-						};
-					})
-					.filter(Boolean);
-			}
-		}
-
-		// console.log(filters)
-
-		try {
-			const query = new SvelteURLSearchParams({
-				page: String(pageArg),
-				limit: '14',
-				isActive: 'true'
-			});
-
-			
-
-			if (selectedCategory) query.set('category', selectedCategory);
-
-			if (Object.keys(filterQueryObj).length) {
-				for (const [key, value] of Object.entries(filterQueryObj)) {
-					if (value === null || value === undefined || value === '') continue;
-
-					// Если значение — объект диапазона { min, max }
-					if (typeof value === 'object' && !Array.isArray(value)) {
-						if (value.min !== undefined && value.min !== '') {
-							query.set(`attr.${key}.gte`, String(value.min));
-						}
-						if (value.max !== undefined && value.max !== '') {
-							query.set(`attr.${key}.lte`, String(value.max));
-						}
-					} else {
-						// Обычное значение (число, строка, булево)
-						query.set(`attr.${key}`, String(value));
-					}
-				}
-			}
-
-			const data = await api(`http://localhost:3000/api/pmvs?${query}`);
-			listings = data.items;
-			pagination = data.pagination;
-		} catch (err) {
-			error = err.message;
-		} finally {
-			loading = false;
-		}
-	}
 
 	async function created() {
 		showCreate = false;
@@ -178,7 +169,6 @@
 			notice = '';
 		}, 3000);
 	}
-
 
 	onMount(async () => {
 		try {
@@ -253,7 +243,7 @@
 									max={filter.baseMax}
 									placeholder="Мин"
 									class="w-20 rounded-lg border border-gray-300 px-1 py-1 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-									on:change={() => updateFilterQuery(filter)}
+									on:change={() => handleFilter(filter)}
 								/>
 							</label>
 
@@ -266,7 +256,7 @@
 									max={filter.baseMax}
 									placeholder="Макс"
 									class="w-20 rounded-lg border border-gray-300 px-1 py-1 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-									on:change={() => updateFilterQuery(filter)}
+									on:change={() => handleFilter(filter)}
 								/>
 							</label>
 						</div>
@@ -275,16 +265,11 @@
 			</div>
 			<button
 				class="w-60 font-medium text-neutral-100 py-2 mt-6 rounded-lg bg-blue-300 hover:bg-blue-500 duration-200 cursor-pointer"
-				on:click={async () => {
-					if (!Object.keys(filterQueryObj).length) {
-						return;
-					}
-					await load(1);
-				}}>ПОКАЗАТЬ</button
+				on:click={applyFilter}>ПОКАЗАТЬ</button
 			>
 			<button
 				class="w-60 font-medium text-neutral-100 py-2 mt-6 rounded-lg bg-blue-300 hover:bg-blue-500 duration-200 cursor-pointer"
-				on:click={ resetFilter }>ОЧИСТИТЬ</button
+				on:click={resetFilter}>ОЧИСТИТЬ</button
 			>
 		{/if}
 
@@ -323,13 +308,15 @@
 						class:border-gray-300={selectedCategory !== item.slug}
 						class:bg-gray-50={selectedCategory !== item.slug}
 						class:text-gray-800={selectedCategory !== item.slug}
-						on:click={() => {
+						on:click={async () => {
 							if (selectedCategory === item.slug) {
 								return;
 							}
-							filterQueryObj = {};
+							// filterQueryObj = {};
 							selectedCategory = item.slug;
-							load(1);
+
+							await loadFilters();
+							await load(1);
 						}}
 					>
 						{item.name}
