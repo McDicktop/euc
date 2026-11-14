@@ -24,6 +24,70 @@
 
 	let filters = [];
 	let filterQueryObj = {};
+	let filterRanges = {};
+
+	async function loadFilters() {
+		filters = [];
+		filterQueryObj = {};
+		filterRanges = {};
+
+		if(!selectedCategory) return;
+
+		try {
+			// код из load 
+		} catch (err) {
+			error = err.message;
+		}
+	}
+
+	function buildQuery(args) {
+
+	}
+
+	async function applyFilters() {
+		await load(1);
+	}
+
+
+	const updateFilterQuery = (filter) => {
+		if (filter.min < filterRanges[filter.key].min) {
+			filter.min = filterRanges[filter.key].min;
+		} else if (filter.min > filterRanges[filter.key].max) {
+			filter.min = filterRanges[filter.key].max;
+		}
+
+		if (filter.max > filterRanges[filter.key].max) {
+			filter.max = filterRanges[filter.key].max;
+		} else if (filter.max < filterRanges[filter.key].min) {
+			filter.max = filterRanges[filter.key].min;
+		}
+
+		if (filter.min > filter.max) {
+			filter.min = filterRanges[filter.key].min;
+			filter.max = filterRanges[filter.key].max;
+		}
+
+		// Триггерим реактивность в Svelte, чтобы инпуты визуально обновились при сбросе
+		filters = filters;
+
+		// Если после изменения инпута фильтра min и max совпадают
+		if (filter.min === filter.max) {
+			filterQueryObj[filter.key] = filter.min;
+			return;
+		}
+
+		if (filter.min === filterRanges[filter.key].min && filter.max === filterRanges[filter.key].max) {
+			delete filterQueryObj[filter.key];
+			return;
+		}
+
+		filterQueryObj[filter.key] = { min: filter.min, max: filter.max };
+	};
+
+	const resetFilter = () => {
+		console.log('reset')
+		
+	}
 
 	async function load(pageArg = 1) {
 		loading = true;
@@ -33,27 +97,38 @@
 			const catByslug = await api(`http://localhost:3000/api/categories/slug/${selectedCategory}`);
 
 			if (!Object.keys(filterQueryObj).length) {
-				filters = catByslug?.attributes
+				filters = (catByslug?.attributes ?? [])
 					.map((attr) => {
 						if (!attr.attribute.filterable || attr.attribute.type !== 'number') return false;
 
 						// Определяем min и max значения из базы
-						const dbMin = attr.attribute.min || attr.min;
-						const dbMax = attr.attribute.max || attr.max;
+						// const dbMin = attr.attribute.min || attr.min;
+						// const dbMax = attr.attribute.max || attr.max;
+
+						filterRanges[attr.attribute.key] = {
+							min: attr.attribute.min || attr.min,
+							max: attr.attribute.max || attr.max
+						};
+						// console.log(filterRanges)
 
 						return {
 							label: attr.attribute.label,
 							key: attr.attribute.key,
 							unit: attr.attribute.unit,
-							min: dbMin,
-							max: dbMax,
-							baseMin: dbMin,
-							baseMax: dbMax
+							min: filterRanges[attr.attribute.key].min,
+							max: filterRanges[attr.attribute.key].max,
+							
+							// min: dbMin,
+							// max: dbMax,
+							// baseMin: dbMin,
+							// baseMax: dbMax
 						};
 					})
 					.filter(Boolean);
 			}
 		}
+
+		// console.log(filters)
 
 		try {
 			const query = new SvelteURLSearchParams({
@@ -62,10 +137,11 @@
 				isActive: 'true'
 			});
 
+			
+
 			if (selectedCategory) query.set('category', selectedCategory);
 
 			if (Object.keys(filterQueryObj).length) {
-
 				for (const [key, value] of Object.entries(filterQueryObj)) {
 					if (value === null || value === undefined || value === '') continue;
 
@@ -103,40 +179,6 @@
 		}, 3000);
 	}
 
-	const updateFilterQuery = (filter) => {
-		if (filter.min < filter.baseMin) {
-			filter.min = filter.baseMin;
-		} else if (filter.min > filter.baseMax) {
-			filter.min = filter.baseMax;
-		}
-
-		if (filter.max > filter.baseMax) {
-			filter.max = filter.baseMax;
-		} else if (filter.max < filter.baseMin) {
-			filter.max = filter.baseMin;
-		}
-
-		if (filter.min > filter.max) {
-			filter.min = filter.baseMin;
-			filter.max = filter.baseMax;
-		}
-
-		// Триггерим реактивность в Svelte, чтобы инпуты визуально обновились при сбросе
-		filters = filters;
-
-		// Если после изменения инпута фильтра min и max совпадают
-		if (filter.min === filter.max) {
-			filterQueryObj[filter.key] = filter.min;
-			return;
-		}
-
-		if (filter.min === filter.baseMin && filter.max === filter.baseMax) {
-			delete filterQueryObj[filter.key];
-			return;
-		}
-
-		filterQueryObj[filter.key] = { min: filter.min, max: filter.max };
-	};
 
 	onMount(async () => {
 		try {
@@ -239,6 +281,10 @@
 					}
 					await load(1);
 				}}>ПОКАЗАТЬ</button
+			>
+			<button
+				class="w-60 font-medium text-neutral-100 py-2 mt-6 rounded-lg bg-blue-300 hover:bg-blue-500 duration-200 cursor-pointer"
+				on:click={ resetFilter }>ОЧИСТИТЬ</button
 			>
 		{/if}
 

@@ -60,7 +60,6 @@ exports.list = asyncHandler(async (req, res) => {
         key.startsWith("attr."),
     );
 
-
     if (attributeFilters.length && !query.category)
         throw new HttpError(
             422,
@@ -100,6 +99,12 @@ exports.list = asyncHandler(async (req, res) => {
                     `Unknown filter operator: ${operator}`,
                 );
 
+            // query[`details.${attributeKey}`] = typeFilter(
+            //     attribute,
+            //     raw,
+            //     mongoOperator,
+            // );
+
 
             const fieldKey = `details.${attributeKey}`;
             const parsedFilter = typeFilter(attribute, raw, mongoOperator);
@@ -128,13 +133,6 @@ exports.list = asyncHandler(async (req, res) => {
                 query[fieldKey] = parsedFilter;
             }
 
-
-
-            // query[`details.${attributeKey}`] = typeFilter(
-            //     attribute,
-            //     raw,
-            //     mongoOperator,
-            // );
         }
     }
 
