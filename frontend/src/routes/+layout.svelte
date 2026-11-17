@@ -63,9 +63,15 @@
 
 
 <script>
+	import { onMount } from 'svelte';
+	import { restoreSession } from '$lib/auth/auth';
 	import './layout.css';
 	
 	let { children } = $props();
+
+	onMount(() => {
+		restoreSession();
+	})
 </script>
 
 {@render children()}

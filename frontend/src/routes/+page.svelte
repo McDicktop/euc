@@ -1,6 +1,6 @@
 <script>
 	import { auth } from '$lib/stores/auth';
-	import { logout, restoreSession } from '$lib/auth/auth';
+	import { logout } from '$lib/auth/auth';
 
 	import { onMount } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
@@ -26,14 +26,18 @@
 	let notice = '';
 
 	let filters = [];
+
 	let filterQueryObj = {};
 
 	let filtersLoading = false;
 	let openEnumKey = null;
 
-	$: if (selectedCategory !== undefined) {
-		loadFilters();
-	}
+	// $: if (selectedCategory !== undefined) {
+	// 	loadFilters();
+	// }
+
+	let loadSeq = 0;
+	let filtersSeq = 0;
 
 	$: numberFilters = filters.filter((f) => f.type === 'number');
 	$: booleanFilters = filters.filter((f) => f.type === 'boolean');
@@ -48,39 +52,74 @@
 	};
 
 	async function load(pageArg = 1) {
+		const requestId = ++loadSeq; // 1
 		loading = true;
 		error = '';
 
 		try {
 			const data = await api(`http://localhost:3000/api/pmvs?${buildQuery(pageArg)}`);
+
+			if (requestId !== loadSeq) return;
+			// 1 === 1
+
 			listings = data.items;
 			pagination = data.pagination;
 		} catch (err) {
+			if (requestId !== loadSeq) return;
 			error = err.message;
 		} finally {
 			loading = false;
 		}
 	}
 
-	async function loadFilters() {
+	// - loadSeq = 2
+
+	// load #1
+	// 	- reqId = 1
+	// 	- await ~3s
+	// 	- +
+
+	// load #2
+	// 	- reqId = 2
+	// 	- await ~1s
+	// 	- +
+
+	async function loadFilters(slug) {
+		const requestId = ++filtersSeq;
+
 		filters = [];
 		filterQueryObj = {};
-		if (!selectedCategory) {
+
+		if (!slug) {
+			filtersLoading = false;
 			return;
 		}
 
 		filtersLoading = true;
 
 		try {
-			const categoryBySlug = await api(
-				`http://localhost:3000/api/categories/slug/${selectedCategory}`
-			);
+			const categoryBySlug = await api(`http://localhost:3000/api/categories/slug/${slug}`);
+
+			if (requestId !== filtersSeq) return;
+
 			filters = buildFilters(categoryBySlug?.attributes ?? []);
 		} catch (error) {
+			if (requestId !== filtersSeq) return;
 			console.error('Ошибка загрузки фильтров:', error);
 		} finally {
 			filtersLoading = false;
 		}
+	}
+
+	function selectCategory(slug) {
+		if (selectedCategory === slug) return;
+
+		openEnumKey = null;
+		filterQueryObj = {};
+		selectedCategory = slug;
+
+		loadFilters(slug);
+		load(1);
 	}
 
 	function buildFilters(attributes) {
@@ -128,7 +167,15 @@
 		}, []);
 	}
 
-	const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+	// const clamp = (val, min, max) => Math.min(куы, max);
+	const clamp = (val, lo, hi) => {
+		let res = val;
+
+		if (lo !== null && lo !== undefined) res = Math.max(res, lo);
+		if ((hi !== null) & (hi !== undefined)) res = Math.min(res, hi);
+
+		return res;
+	};
 
 	const handleFilter = (filter) => {
 		const { key, type } = filter;
@@ -225,7 +272,6 @@
 	}
 
 	async function applyFilter() {
-		console.log(filterQueryObj);
 		openEnumKey = null;
 		await load(1);
 	}
@@ -260,12 +306,17 @@
 		}, 3000);
 	}
 
+	async function handleLogout() {
+		try {
+			await logout();
+		} catch (err) {
+			error = err.message;
+		}
+	}
+
 	onMount(async () => {
 		try {
 			categories = await api('http://localhost:3000/api/categories');
-
-			restoreSession();
-			console.log('USER', $auth.user);
 		} catch (e) {
 			error = e.message;
 		}
@@ -286,21 +337,37 @@
 		<a href="#catalog">Каталог</a>
 		<a href="/admin">Админ</a>
 
-		<button
+		<!-- <button
 			class="cursor-pointer"
 			on:click={() => {
 				showCreate = true;
 			}}>Разместить объявление</button
-		>
+		>] -->
+
+		{#if $auth.isInitializing}
+			<span>Загрузка сессии..</span>
+		{:else if $auth.isAuthenticated}
+			<button
+				class="cursor-pointer"
+				on:click={() => {
+					showCreate = true;
+				}}>Разместить объявление</button
+			>
+			<span>{$auth.user?.name ?? $auth.user?.email}</span>
+			<button class="cursor-pointer" on:click={handleLogout}>Выйти</button>
+		{:else}
+				<a href="/signin">Войти</a>
+				<a href="/signup">Регистрация</a>
+		{/if}
 	</nav>
 </header>
 
 <main>
-	{#if showCreate}
+	{#if showCreate && $auth.isAuthenticated}
 		<div class="mx-auto">
 			<ListingForm
 				{categories}
-				onCreate={created}
+				onCreated={created}
 				onCancel={() => {
 					showCreate = false;
 				}}
@@ -317,12 +384,10 @@
 
 	<section class="mx-auto max-w-[1440px] px-[5vw] pt-24 pb-28">
 		{#if selectedCategory && filters.length > 0}
-			<div class="flex flex-col gap-6">			
-
+			<div class="flex flex-col gap-6">
 				<NumberFilters {numberFilters} {handleFilter} />
 				<EnumFilters {enumFilters} {openEnumKey} {handleFilter} {toggleEnumDropdown} />
 				<BooleanFilters {booleanFilters} {handleFilter} />
-			
 			</div>
 
 			<div class="mt-6 flex gap-4">
@@ -356,12 +421,7 @@
 					class:bg-gray-50={selectedCategory}
 					class:text-gray-800={selectedCategory}
 					on:click={() => {
-						if (!selectedCategory) {
-							return;
-						}
-						filterQueryObj = {};
-						selectedCategory = '';
-						load(1);
+						selectCategory('');
 					}}
 				>
 					Все
@@ -377,14 +437,7 @@
 						class:bg-gray-50={selectedCategory !== item.slug}
 						class:text-gray-800={selectedCategory !== item.slug}
 						on:click={async () => {
-							if (selectedCategory === item.slug) {
-								return;
-							}
-							// filterQueryObj = {};
-							selectedCategory = item.slug;
-
-							// await loadFilters();
-							await load(1);
+							selectCategory(item.slug);
 						}}
 					>
 						{item.name}

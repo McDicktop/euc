@@ -1,5 +1,6 @@
 <script>
 	import { api } from '$lib/api';
+	import { auth } from '$lib/stores/auth';
 
 	export let categories = [];
 	export let onCreated = () => {};
@@ -109,7 +110,6 @@
 			payload.set('mileage', form.mileage);
 			payload.set('isActive', 'true');
 			payload.set('status', 'available');
-			payload.set('userId', '6a5348463641d97dc24e72c3');
 
 			const cleanDetails = {};
 			for (const item of category.attributes || []) {

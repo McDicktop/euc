@@ -194,7 +194,7 @@ exports.getByUserId = asyncHandler(async (req, res) => {
 
 exports.create = asyncHandler(async (req, res) => {
 
-    const body = { ...req.body };
+    const body = { ...req.body, userId: req.userId };
     const files = Array.isArray(req.files) ? req.files : [];
 
     for (let field of ["details", "images", "location"]) {

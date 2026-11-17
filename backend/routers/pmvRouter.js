@@ -8,9 +8,9 @@ router.get("/", controller.list);
 // router.get("/:id", requireAuth, controller.get);
 router.get("/:id", controller.get);
 router.get("/user/:id", controller.getByUserId);
-router.post("/", multerErrorHandler(upload.array("images", 5)), controller.create);
-router.patch("/:id", controller.update);
-router.delete("/:id", controller.delete);
+router.post("/", requireAuth, multerErrorHandler(upload.array("images", 5)), controller.create);
+router.patch("/:id", requireAuth, controller.update);
+router.delete("/:id", requireAuth, controller.delete);
 
 module.exports = router;
 

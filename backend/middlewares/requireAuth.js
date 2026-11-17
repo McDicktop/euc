@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/user")
 
 function requireAuth(req, res, next) {
 
@@ -27,32 +28,41 @@ function requireAuth(req, res, next) {
     }
 }
 
-function requiredAdmin(req, res, next) {
 
-    // const authHeader = req.get('authorization'); 
+function requireRole(...roles) {
+    return async (req, res, next) => {
+        if(!req.userId) {
+            return res.status(401).json({
+                message: "Sign in to your account",
+                error: "NO_ACCESS_TOKEN"
+            })
+        }
 
-    // if(!authHeader || !authHeader.startsWith("Bearer ")) {
-    //     return res.status(401).json({
-    //         message: "Authorization token is missing",
-    //         error: "NO_ACCESS_TOKEN"
-    //     })
-    // }
+        let user;
+        try {
+            user = await User.findById(req.userId).select("role")
+        } catch (error) {
+            return next(error)
+        }
 
-    // const token = authHeader.slice("Bearer ".length);
+        if(!user) {
+            return res.status(404).json({
+                message: "User not found",
+                error: "USER_NOT_FOUND"
+            })
+        }
 
-    // try {
-    //     const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-    //     const user = await User.find();
-    //     if(user.role ==== 'admib')
-    
-    //     req.userId = payload.sub;
-    //     next();
-    // } catch(e) {
-    //     return res.status(401).json({
-    //         message: "Access token is invalid or expired",
-    //         error: "NO_ACCESS_TOKEN"
-    //     })
-    // }
+        if (!roles.includes(user.role)) {
+            return res.status(403).json({
+                message: "Access denied",
+                error: "FORBIDDEN"
+            })
+        }
+
+        next()
+    }
 }
 
-module.exports = { requireAuth };
+const requireAdmin = requireRole("admin")
+
+module.exports = { requireAuth, requireRole, requireAdmin };
