@@ -23,7 +23,6 @@
 									bind:group={filter.value}
 									class="h-3.5 w-3.5 cursor-pointer border-gray-300 text-blue-500 focus:ring-blue-500"
 									on:change={() => {
-										filters = filters;
 										handleFilter(filter);
 									}}
 								/>

@@ -287,7 +287,7 @@
 		<a href="/admin">Админ</a>
 
 		<button
-			class=""
+			class="cursor-pointer"
 			on:click={() => {
 				showCreate = true;
 			}}>Разместить объявление</button
@@ -348,7 +348,7 @@
 
 			<div class="flex flex-wrap justify-end gap-2">
 				<button
-					class="rounded-full px-4 py-2 transition"
+					class="rounded-full px-4 py-2 transition cursor-pointer"
 					class:border-gray-800={!selectedCategory}
 					class:bg-gray-800={!selectedCategory}
 					class:text-white={!selectedCategory}
@@ -369,7 +369,7 @@
 
 				{#each categories.filter((item) => item.isActive) as item (item.slug)}
 					<button
-						class="rounded-full px-4 py-2 transition"
+						class="rounded-full px-4 py-2 transition cursor-pointer"
 						class:border-gray-800={selectedCategory === item.slug}
 						class:bg-gray-800={selectedCategory === item.slug}
 						class:text-white={selectedCategory === item.slug}

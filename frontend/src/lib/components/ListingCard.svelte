@@ -28,7 +28,8 @@
 </script>
 
 <article
-	class="overflow-hidden rounded-xl border border-line bg-paper transition duration-200 hover:scale-105"
+	// class="overflow-hidden rounded-xl border border-line bg-paper transition duration-200 hover:scale-105"
+	class="overflow-hidden rounded-xl border border-gray-300 transition duration-200 hover:border-gray-600 hover:shadow-md hover:shadow-black hover:opacity-80"
 >
 	<div class="relative h-64 overflow-hidden">
 		{#if item.images?.coverKey && !imageFailed}
