@@ -35,16 +35,16 @@ async function categoryIdFromSlug(slug) {
 }
 
 function typeFilter(attribute, raw, operation) {
+
     const value =
         attribute.type === "number"
             ? Number(raw)
             : attribute.type === "boolean"
-              ? "raw" === "true"
+              ? raw === "true"
               : raw;
     if (attribute.type === "number" && Number.isNaN(value))
         throw new HttpError(422, `Filter ${attribute.key} must be numeric`);
     if (operation) return { [operation]: value };
-
     return value;
 }
 
@@ -76,6 +76,7 @@ exports.list = asyncHandler(async (req, res) => {
         );
 
         for (const [key, raw] of attributeFilters) {
+
             const [, attributeKey, operator] = key.split(".");
             const attribute = byKey.get(attributeKey);
 
@@ -192,14 +193,6 @@ exports.getByUserId = asyncHandler(async (req, res) => {
 });
 
 exports.create = asyncHandler(async (req, res) => {
-    // const payload = validate(pmvCreateSchema, req.body);
-    // payload.details = await validateDetails(payload.category, payload.details);
-
-    // // console.log(payload.details)
-
-    // const pmv = await PMV.create(payload);
-
-    // res.status(201).json(await PMV.findById(pmv.id).populate("category"));
 
     const body = { ...req.body };
     const files = Array.isArray(req.files) ? req.files : [];

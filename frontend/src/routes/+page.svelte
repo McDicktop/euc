@@ -5,12 +5,15 @@
 	import { onMount } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
-
 	import { page } from '$app/stores';
 
 	import { api } from '$lib/api';
+
 	import ListingCard from '$lib/components/ListingCard.svelte';
 	import ListingForm from '$lib/components/ListingForm.svelte';
+	import NumberFilters from '$lib/components/filters/NumberFilters.svelte';
+	import EnumFilters from '$lib/components/filters/EnumFilters.svelte';
+	import BooleanFilters from '$lib/components/filters/BooleanFilters.svelte';
 
 	let categories = [];
 	let listings = [];
@@ -212,7 +215,7 @@
 			else if (
 				typeof value === 'boolean' ||
 				typeof value === 'number' ||
-				typeof value === 'string'  // ?????? наверное нужно убрать
+				typeof value === 'string' // ?????? наверное нужно убрать
 			) {
 				query.set(`attr.${key}`, String(value));
 			}
@@ -314,138 +317,12 @@
 
 	<section class="mx-auto max-w-[1440px] px-[5vw] pt-24 pb-28">
 		{#if selectedCategory && filters.length > 0}
-			<div class="flex flex-col gap-6">
-				<!-- Блок числовых фильтров -->
-				{#if numberFilters.length > 0}
-					<div class="flex flex-wrap gap-6">
-						{#each numberFilters as filter (filter.key)}
-							<div
-								class="flex flex-col items-center gap-2 rounded-xl border border-gray-300 px-3 py-2"
-							>
-								<span class="text-sm font-semibold text-gray-700">
-									{filter.label}
-									{#if filter.unit}({filter.unit}){/if}
-								</span>
-								<div class="flex items-center gap-2">
-									<label class="flex items-center gap-1.5 text-xs text-gray-500">
-										<span>min</span>
-										<input
-											type="number"
-											bind:value={filter.min}
-											min={filter.baseMin}
-											max={filter.baseMax}
-											placeholder="Мин"
-											class="w-20 rounded-lg border border-gray-300 px-1 py-1 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-											on:change={() => handleFilter(filter)}
-										/>
-									</label>
-									<label class="flex items-center gap-1.5 text-xs text-gray-500">
-										<span>max</span>
-										<input
-											type="number"
-											bind:value={filter.max}
-											min={filter.baseMin}
-											max={filter.baseMax}
-											placeholder="Макс"
-											class="w-20 rounded-lg border border-gray-300 px-1 py-1 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-											on:change={() => handleFilter(filter)}
-										/>
-									</label>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
+			<div class="flex flex-col gap-6">			
 
-				<!-- Блок списков (enum) -->
-				{#if enumFilters.length > 0}
-					<div class="flex flex-wrap gap-6">
-						{#each enumFilters as filter (filter.key)}
-							<!-- svelte-ignore a11y-click-events-have-key-events -->
-							<!-- svelte-ignore a11y-no-static-element-interactions -->
-							<div class="relative flex flex-col gap-1.5" on:click|stopPropagation>
-								<span class="text-xs font-semibold text-gray-700">
-									{filter.label}
-								</span>
-
-								<button
-									type="button"
-									class="flex min-w-44 items-center justify-between gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 transition-colors hover:border-gray-400"
-									on:click={() => toggleEnumDropdown(filter.key)}
-								>
-									<span class="truncate">
-										{#if filter.selected.length === 0}
-											Все
-										{:else if filter.selected.length === 1}
-											{filter.selected[0]}
-										{:else}
-											Выбрано: {filter.selected.length}
-										{/if}
-									</span>
-									<span class="text-xs text-gray-500">
-										{openEnumKey === filter.key ? '▲' : '▼'}
-									</span>
-								</button>
-
-								{#if openEnumKey === filter.key}
-									<div
-										class="absolute top-full left-0 z-20 mt-1 flex max-h-60 min-w-full flex-col gap-1 overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg"
-									>
-										{#each filter.options as option}
-											<label
-												class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
-											>
-												<input
-													type="checkbox"
-													value={option}
-													bind:group={filter.selected}
-													class="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
-													on:change={() => handleFilter(filter)}
-												/>
-												<span class="whitespace-nowrap">{option}</span>
-											</label>
-										{/each}
-									</div>
-								{/if}
-							</div>
-						{/each}
-					</div>
-				{/if}
-
-				<!-- Блок переключателей (boolean) -->
-				{#if booleanFilters.length > 0}
-					<div class="flex flex-wrap gap-6">
-						{#each booleanFilters as filter (filter.key)}
-							<div
-								class="flex flex-col items-center gap-2 rounded-xl border border-gray-300 px-3 py-2"
-							>
-								<span class="text-sm font-semibold text-gray-700">
-									{filter.label}
-								</span>
-								<div class="flex items-center gap-3">
-									{#each [{ label: 'Все', val: null }, { label: 'Да', val: true }, { label: 'Нет', val: false }] as opt}
-										<label
-											class="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-700"
-										>
-											<input
-												type="radio"
-												name={`bool-${filter.key}`}
-												value={opt.val}
-												bind:group={filter.value}
-												class="h-3.5 w-3.5 cursor-pointer border-gray-300 text-blue-500 focus:ring-blue-500"
-												on:change={() => {
-													filters = filters;
-													handleFilter(filter);
-												}}
-											/>
-											<span>{opt.label}</span>
-										</label>
-									{/each}
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
+				<NumberFilters {numberFilters} {handleFilter} />
+				<EnumFilters {enumFilters} {openEnumKey} {handleFilter} {toggleEnumDropdown} />
+				<BooleanFilters {booleanFilters} {handleFilter} />
+			
 			</div>
 
 			<div class="mt-6 flex gap-4">
