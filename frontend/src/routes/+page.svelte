@@ -334,7 +334,6 @@
 	</a>
 
 	<nav class="flex items-center gap-8 text-sm font-medium">
-		<a href="#catalog">Каталог</a>
 		<a href="/admin">Админ</a>
 
 		<!-- <button

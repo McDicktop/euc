@@ -3,9 +3,10 @@ const User = require("../models/user")
 
 function requireAuth(req, res, next) {
 
-    // const authHeader = req.header.authorization;
+    // const authHeader = req.header.authorization; 
 
-    const authHeader = req.get('authorization'); 
+
+    const authHeader = req.get('authorization');
 
     if(!authHeader || !authHeader.startsWith("Bearer ")) {
         return res.status(401).json({
@@ -31,6 +32,7 @@ function requireAuth(req, res, next) {
 
 function requireRole(...roles) {
     return async (req, res, next) => {
+        
         if(!req.userId) {
             return res.status(401).json({
                 message: "Sign in to your account",
@@ -44,6 +46,8 @@ function requireRole(...roles) {
         } catch (error) {
             return next(error)
         }
+
+        
 
         if(!user) {
             return res.status(404).json({

@@ -1,6 +1,22 @@
 export async function api(path, options = {}) {
-	const res = await fetch(path, options);
+	const token = localStorage.getItem('token');
+	const headers = {
+		'Content-Type': 'application/json',
+		...options.headers,
+	};
+	if (token) {
+		headers['Authorization'] = `Bearer ${token}`;
+	}
+
+	const res = await fetch(path, {
+		...options,
+		headers,
+	});
+
 	if (res.status === 204) return null;
+
+	// const res = await fetch(path, options);
+	// if (res.status === 204) return null;
 
 	const data = await res.json().catch((e) => {
 		if (e.name === "AbortError") throw e;
@@ -15,8 +31,8 @@ export async function api(path, options = {}) {
 
 export function mediaUrl(key) {
 	// /api/media/*key
-	if(!key) return "";
-	if(key.startsWith("/api/media/")) return key.split("/").map(encodeURIComponent).join("/");
+	if (!key) return "";
+	if (key.startsWith("/api/media/")) return key.split("/").map(encodeURIComponent).join("/");
 
 	return `/api/media/${key.split("/").map(encodeURIComponent).join("/")}`;
 
@@ -25,7 +41,7 @@ export function mediaUrl(key) {
 export function json(method, body) {
 	return {
 		method,
-		headers: {"Content-Type": "application/json"},
+		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(body)
 	}
 }
@@ -37,8 +53,8 @@ export function json(method, body) {
 
 export const statusLabels = {
 	available: "Свободен",
-	rented: "Арендованный", 
-	lost: "Потерянный", 
+	rented: "Арендованный",
+	lost: "Потерянный",
 	maintenance: "В ремонте",
 }
 
