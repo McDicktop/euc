@@ -1,0 +1,13 @@
+{
+  "name": "rabbit_orders",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "server": "node server.js",
+    "consumer": "node consumer.js"
+  },
+  "dependencies": {
+    "amqplib": "^2.4.1",
+    "express": "^5.3.0"
+  }
+}

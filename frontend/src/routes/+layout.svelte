@@ -1,77 +1,81 @@
-<!-- <script>
-	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
-
-	import { goto } from '$app/navigation';
-	import { browser } from '$app/env';
-
-	import { auth } from '$lib/stores/auth';
-	import { restoreSession, logout } from '$lib/api/auth';
-
-	import './layout.css';
-
-	onMount(() => {
-		restoreSession();
-	});
-
-	async function handleLogout() {
-		await logout();
-	}
-
-	const HIDDEN_NAV_ROUTES = ['/signin', '/signup'];
-
-	$: hidenNav = HIDDEN_NAV_ROUTES.some((route) => $page.url.pathname.startsWith(route));
-
-	$: if (
-		browser && 
-		$auth.user &&
-		hidenNav
-	) {
-		goto('/', {resplaceState: true});
-	}
-</script>
-
-{#if !hidenNav}
-	<header
-		class="flex items-center justify-between px-6 py-5 border-b border-slate-200 bg-slate-100"
-	>
-		<div class="flex max-w-3xl items-center justify-between w-full">
-			<a href="/" class="font-semibold text-gray-900 text-xl" aria-label="home">NativeWheels</a>
-		</div>
-
-		<nav class="flex items-center gap-4 text-sm">
-			{#if $auth.isInitializing}
-				<span class="text-gray-400">...</span>
-			{:else if $auth.isAuthenticated}
-				<span class="text-gray-700">{$auth.user?.name ?? $auth.user?.email}</span>
-				<button class="text-amber-500 hover:underline" on:click={handleLogout}>Выйти</button>
-			{:else}
-				<a href="/signin" class="text-amber-600 hover:underline">Войти</a>
-				<a href="/signup" class="text-amber-600 hover:underline">Регистрация</a>
-			{/if}
-		</nav>
-	</header>
-{/if}
-
-<main class="min-h-screen">
-	{#if $auth.isInitializing}
-		<p class="text-center mt-16 text-gray-400">Загрузка...</p>
-	{:else}
-		<slot />
-	{/if}
-</main> -->
-
-
 <script>
 	import { onMount } from 'svelte';
 	import { restoreSession } from '$lib/auth/auth';
+	import { page } from '$app/stores';
+	import { derived } from 'svelte/store';
+	import { goto } from '$app/navigation';
+	import { auth } from '$lib/stores/auth';
+
 	import './layout.css';
 	
 	let { children } = $props();
 
+	const isAdminPage = $derived(
+		$page.url.pathname === "/admin" || $page.url.pathname.startsWith("/admin/")
+	)
+
+	const isAuthPage = $derived(
+		$page.url.pathname === "/signin" || $page.url.pathname === "/signup"
+	)
+
 	onMount(() => {
 		restoreSession();
 	})
+
+	$effect(() => {
+		if ($auth.isInitializing) return;
+
+		if (isAdminPage) {
+			if(!$auth.isAuthenticated) {
+				goto('/signin', { replaceState: true })
+			} else if ($auth.user?.role !== "admin") {
+				goto("/", { replaceState: true })
+			}
+		} else if (isAuthPage && $auth.isAuthenticated) {
+			goto("/", { replaceState: true })
+		}
+	})
 </script>
 
-{@render children()}
+{#if $auth.isInitializing}
+	<p class="text-center p-6">Загрузка сессии...</p>
+{:else if isAdminPage && (!$auth.isAuthenticated || $auth.user?.role !== "admin")}
+	<p class="text-center p-6">Проверка доступа...</p>
+{:else if isAuthPage && $auth.isAuthenticated}
+	<p class="text-center p-6">Проверка доступа...</p>
+{:else}
+	{@render children()}
+{/if}
+
+<!-- // visitor
+// guest
+// user
+  -- editor
+  -- moderator
+  -- verifier
+// admin  -->
+
+<!-- / +page.svelte
+/account +page.svelte
+/admin +layout
+	--- +page.svelte
+    --- /collections/create +page.svelte
+
++page.svelte -> children()
+
+
++layout -> children() -> +layout(admin) -> children() -> +page.svelte (admin) -->
+
+
+<!-- layout.js <- +page.js (obj)
+
+{
+	"access": str (role)
+}
+
+
+edit/1/ load() {
+	return {
+		"access": "editor"
+	}
+} -->

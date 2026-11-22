@@ -32,10 +32,6 @@
 	let filtersLoading = false;
 	let openEnumKey = null;
 
-	// $: if (selectedCategory !== undefined) {
-	// 	loadFilters();
-	// }
-
 	let loadSeq = 0;
 	let filtersSeq = 0;
 
