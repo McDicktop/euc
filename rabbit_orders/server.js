@@ -49,3 +49,6 @@ connectRabbit()
         console.log("Не удалось подключиться к Rabbit", err.message);
         process.exit(1)
     })
+
+
+
